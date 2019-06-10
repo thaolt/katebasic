@@ -159,8 +159,8 @@ macro mov? dst, src
 				else
 					error "invalid instruction"
 				end if
-			else match nn, src ; mov vx, nn
-				dw ((0x6000 or (rd shl 8)) or nn) bswap 2
+			else ; mov vx, nn
+				dw ((0x6000 or (rd shl 8)) or src) bswap 2
 			end match
 		else if rd = 0x12 ; mov dtm, vx
 			dw (0xF015 or (rd shl 8)) bswap 2
