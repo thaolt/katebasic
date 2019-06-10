@@ -58,6 +58,96 @@ macro bjp? nnn
 	end if
 end macro
 
+macro se? dst, src
+	match [:x:], dst
+		if (x < 0x10)
+			match [:y:], src
+				if y < 0x10
+					dw ((0x5000 or (x shl 8)) or (y shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else
+				if src < 0xFF
+					dw ((0x3000 or (x shl 8)) or src) bswap 2
+				else
+					error "invalid instruction, out of range"
+				end if
+			end match
+		else
+			error "invalid instruction"
+		end if
+	else
+		error "invalid instruction"
+	end match
+end macro
+
+
+
+macro sne? dst, src
+	match [:x:], dst
+		if (x < 0x10)
+			match [:y:], src
+				if y < 0x10
+					dw ((0x9000 or (x shl 8)) or (y shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else
+				if src < 0xFF
+					dw ((0x4000 or (x shl 8)) or src) bswap 2
+				else
+					error "invalid instruction, out of range"
+				end if
+			end match
+		else
+			error "invalid instruction"
+		end if
+	else
+		error "invalid instruction"
+	end match
+end macro
+
+macro sub? rx, ry
+	match [:x:], rx
+		if (x < 0x10)
+			match [:y:], ry
+				if y < 0x10
+					dw ((0x8005 or (x shl 8)) or (y shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else
+				error "invalid instruction, out of range"
+			end match
+		else
+			error "invalid instruction"
+		end if
+	else
+		error "invalid instruction"
+	end match
+end macro
+
+macro rsub? rx, ry
+	match [:x:], rx
+		if (x < 0x10)
+			match [:y:], ry
+				if y < 0x10
+					dw ((0x8007 or (x shl 8)) or (y shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else
+				error "invalid instruction, out of range"
+			end match
+		else
+			error "invalid instruction"
+		end if
+	else
+		error "invalid instruction"
+	end match
+end macro
+
 macro mov? dst, src
 	match [:rd:], dst
 		if rd < 0x10
@@ -186,17 +276,104 @@ macro xdrw? rx, ry
 	end match
 end macro
 
-macro shr? dst, src
-	match [:r:], dst
-		db (0x80 or r)
-	end match
-	match [:r:], src
-		db (r shl 4) or 6
+macro shr? rx, ry
+	match [:x:], rx
+		if (x < 0x10)
+			match [:y:], ry
+				if y < 0x10
+					dw ((0x8006 or (x shl 8)) or (y shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else
+				error "invalid instruction, out of range"
+			end match
+		else
+			error "invalid instruction"
+		end if
+	else
+		error "invalid instruction"
 	end match
 end macro
 
-macro shl? dst, src
-	
+macro shl? rx, ry
+	match [:x:], rx
+		if (x < 0x10)
+			match [:y:], ry
+				if y < 0x10
+					dw ((0x800E or (x shl 8)) or (y shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else
+				error "invalid instruction, out of range"
+			end match
+		else
+			error "invalid instruction"
+		end if
+	else
+		error "invalid instruction"
+	end match
+end macro
+
+macro or? rx, ry
+	match [:x:], rx
+		if (x < 0x10)
+			match [:y:], ry
+				if y < 0x10
+					dw ((0x8001 or (x shl 8)) or (y shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else
+				error "invalid instruction, out of range"
+			end match
+		else
+			error "invalid instruction"
+		end if
+	else
+		error "invalid instruction"
+	end match
+end macro
+
+macro and? rx, ry
+	match [:x:], rx
+		if (x < 0x10)
+			match [:y:], ry
+				if y < 0x10
+					dw ((0x8002 or (x shl 8)) or (y shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else
+				error "invalid instruction, out of range"
+			end match
+		else
+			error "invalid instruction"
+		end if
+	else
+		error "invalid instruction"
+	end match
+end macro
+
+macro xor? rx, ry
+	match [:x:], rx
+		if (x < 0x10)
+			match [:y:], ry
+				if y < 0x10
+					dw ((0x8003 or (x shl 8)) or (y shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else
+				error "invalid instruction, out of range"
+			end match
+		else
+			error "invalid instruction"
+		end if
+	else
+		error "invalid instruction"
+	end match
 end macro
 
 macro hires?
@@ -326,23 +503,20 @@ macro rnd? rx, nn
 		error "invalid instruction"
 	end match
 end macro
-; test
 
-start: 
-cls
-jmp 0x234
-bjp 0x567
-shr v1, v2
-mov va, 0x88
-mov va, vb
-mov va, dtm
-mov i, 0xabc
-add vb, 2
-add i, v9
-drw v1, v2, 8
-xdrw v5, v9
-rnd va, 100
-regd vf
-jmp start
+macro halt?
+	jmp $
+end macro
+
+macro call? nnn
+	if nnn < 0xFFF
+		db (0x2000 or nnn) bswap 2
+	else
+		error "invalid instruction"
+	end if
+end macro
+
+
+
 
 ;end namespace
