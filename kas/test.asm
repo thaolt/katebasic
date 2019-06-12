@@ -1,4 +1,4 @@
-include 'c8asm.inc'
+include 'c8.asm'
 ; Companion Cube Sample program. Disregard its advice.
 
 ; Assemble the program to a CHIP-8 binary like so:
@@ -67,3 +67,5 @@ DRW v0, v1, 8
 ; 1s represent pixels to be drawn, 0s are blank pixels.
 sprite1:
 db  01111110b, 10000001b, 10100101b, 10111101b, 10111101b, 10011001b, 10000001b, 01111110b
+
+halt
