@@ -1,0 +1,54 @@
+Prog.   	Program ::= [Stmt] ;
+
+DLet.		Decl	::= "let" Stmt1 ;
+DSub.		Decl	::= "sub" Id [Stmt] "endsub";
+DFunc.		Decl	::= "func" Id [Stmt] "endfunc";
+DLbl.		Decl	::= LLabel;
+
+coercions Decl 1 ;
+
+SEval.		Stmt2 	::= Exp ;
+SAsg. 		Stmt1	::= Id "=" Stmt2 ;
+SDecl.		Stmt 	::= Decl ;
+SBra.		Stmt 	::= Branch ;
+SLoop.		Stmt 	::= Loop ;
+
+coercions Stmt 2 ;
+
+terminator 	Stmt "" ;
+--separator   Stmt "" ;
+
+LForN.		Loop1	::= "step" Exp [Stmt] "endfor" ;
+LForO.		Loop1	::= [Stmt] "endfor" ;
+LFor.		Loop	::= "for" Stmt1 "to" Exp Loop1 ;
+LWhile.		Loop	::= "while" Exp [Stmt] "endwhile" ;
+LRepeat.	Loop	::= "repeat" [Stmt] "until" Exp ;
+
+coercions Loop 1 ;
+
+BIfEn.		Branch1 ::= "endif" ;
+BIfEl.		Branch1 ::= "else" [Stmt] "endif" ;
+BIfEI.		Branch1 ::= "elif" Exp "then" [Stmt] Branch1 ;
+BIf.		Branch  ::= "if" Exp "then" [Stmt] Branch1 ;
+
+coercions Branch 1 ;
+
+ETrue.   	Exp2  	::= "true" ;
+EFalse.  	Exp2  	::= "false" ;
+EInt. 		Exp2 	::= Integer ;
+EVar. 		Exp2 	::= Id ;
+EDiv. 		Exp1 	::= Exp1 "/" Exp2 ;
+EMul. 		Exp1 	::= Exp1 "*" Exp2 ;
+EAdd. 		Exp  	::= Exp  "+" Exp1 ;
+ESub. 		Exp  	::= Exp  "-" Exp1 ;
+
+coercions Exp 2 ;
+
+token Id (letter (letter | digit | '_')*) ;
+token LLabel (letter (letter | digit | '_')+ ':')  ;
+
+-- rules Type   ::= "bool" | "uint8" ;
+
+comment "`" ;
+comment "//" ;
+comment "/*" "*/" ;
