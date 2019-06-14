@@ -24,17 +24,17 @@ terminator Decl3 "" ;
 coercions Decl 3 ;
 
 -- Statements
--- SEval.		Stmt2 	::= Exp ;
+SEval.		Stmt2 	::= Exp ;
 SAsg. 		Stmt1	::= Id "=" Exp ;
 SDecl.		Stmt 	::= Decl ;
-SBra.		Stmt 	::= Branch ;
+SBran.		Stmt 	::= Branch ;
 SLoop.		Stmt 	::= Loop ;
 SGoto.		Stmt 	::= "goto" Id ;
 SGoSb.		Stmt 	::= "gosub" Id ;
 SAsm.		Stmt 	::= "_" String ;
 SCall.		Stmt 	::= Id "(" [Param] ")" ;
 
-coercions Stmt 1 ;
+coercions Stmt 2 ;
 
 terminator Stmt "" ;
 
@@ -56,7 +56,7 @@ BIf.		Branch  ::= "if" Exp "then" [Stmt] Branch1 ;
 coercions Branch 2 ;
 
 -- Expressions
-_.			Exp 	::= Exp1 ;
+_.			Exp 	::= Exp ;
 ELgOr.		Exp1  	::= Exp1 "or" Exp2;
 ELgAnd.		Exp2  	::= Exp2 "and" Exp3;
 EBitOr.		Exp3  	::= Exp3 "|" Exp4;
@@ -75,13 +75,16 @@ ESub. 		Exp9  	::= Exp9  "-" Exp10 ;
 EDiv. 		Exp10 	::= Exp10 "/" Exp11 ;
 EMul. 		Exp10 	::= Exp10 "*" Exp11 ;
 EMod. 		Exp10 	::= Exp10 "mod" Exp11 ;
-EChr.		Exp11 	::= Char ;
-EStr.		Exp11 	::= String ;
-EVar. 		Exp11 	::= Id ;
-ENum.		Exp11	::= Number ;
-_.			Exp12 	::= "(" Exp ")" ;
+_.			Exp11 	::= "(" Exp ")" ;
+EConst.		Exp12 	::= Const ;
+EVar. 		Exp12 	::= Id ;
 
 coercions Exp 12 ;
+
+-- Constants
+CNum.		Const	::= Number ;
+CStr.		Const	::= String ;
+CChr.		Const	::= Char ;
 
 -- Numbers
 NDec.		Number 	::= NumDec ;
@@ -105,8 +108,8 @@ comment "/*" "*/" ;
 token Id (letter (letter | digit | '_')*) ;
 token LLabel (letter (letter | digit | '_')+ ':') ;
 token NumBin ('%' ('0'|'1')+ ) ;
-token NumDec ( ["123456789"] (digit)* ) ;
 token NumHex ('$' (digit | ["ABCDEF"] | ["abcdef"])+ ) ;
+token NumDec ( ["123456789"] (digit)* ) ;
 token NumFloat ( ["123456789"] (digit)* (('.') (digit)+)? ) ;
 
 
