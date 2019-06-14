@@ -1,41 +1,62 @@
 Prog.   	Program ::= [Stmt] ;
 
-DLet.		Decl	::= "let" Stmt1 ;
-DSub.		Decl	::= "sub" Id [Stmt] "endsub";
-DFunc.		Decl	::= "func" Id [Stmt] "endfunc";
+FArg.		Arg		::=	Id ; -- Function arguments
+FPar.		Param	::=	Exp ; -- Function parameters
+
+separator   Arg "," ;
+separator   Param "," ;
+
+-- Declarations
+DLetTA.		Decl3	::= Id ":" Type "=" Exp ;
+DLetT.		Decl3	::= Id ":" Type ;
+DLetBA.		Decl3	::= Id "=" Exp ;
+DLetB.		Decl3	::= Id ;
+DGlbl.		Decl2	::= "global" Decl3 ;
+DLet.		Decl2	::= "let" Decl3 ;
+DSub.		Decl2	::= "sub" Id [Stmt] "return";
+DFnRt.		Decl1	::= "return" Exp ;
+DFnNR.		Decl1	::= "return" ;
+DFunc.		Decl	::= "func" Id [Arg] ":" [Stmt] Decl1 ;
 DLbl.		Decl	::= LLabel;
 
-coercions Decl 1 ;
+coercions Decl 3 ;
 
+-- Statements
 SEval.		Stmt2 	::= Exp ;
 SAsg. 		Stmt1	::= Id "=" Stmt2 ;
 SDecl.		Stmt 	::= Decl ;
 SBra.		Stmt 	::= Branch ;
 SLoop.		Stmt 	::= Loop ;
+SGoto.		Stmt 	::= "goto" Id ;
+SGoSb.		Stmt 	::= "gosub" Id ;
+SAsm.		Stmt 	::= "_" String ;
+SCall.		Stmt 	::= Id "(" [Param] ")" ;
 
 coercions Stmt 2 ;
 
-terminator 	Stmt "" ;
---separator   Stmt "" ;
+terminator Stmt "" ;
 
+-- Loops
 LForN.		Loop1	::= "step" Exp [Stmt] "endfor" ;
 LForO.		Loop1	::= [Stmt] "endfor" ;
 LFor.		Loop	::= "for" Stmt1 "to" Exp Loop1 ;
-LWhile.		Loop	::= "while" Exp [Stmt] "endwhile" ;
+LWhile.		Loop	::= "while" Exp [Stmt] "endwhile" ; 
 LRepeat.	Loop	::= "repeat" [Stmt] "until" Exp ;
 
 coercions Loop 1 ;
 
-BIfEn.		Branch1 ::= "endif" ;
-BIfEl.		Branch1 ::= "else" [Stmt] "endif" ;
+-- Branching
+BIfEn.		Branch2 ::= "endif" ;
+BIfEl.		Branch1 ::= "else" [Stmt] Branch2 ;
 BIfEI.		Branch1 ::= "elif" Exp "then" [Stmt] Branch1 ;
 BIf.		Branch  ::= "if" Exp "then" [Stmt] Branch1 ;
 
-coercions Branch 1 ;
+coercions Branch 2 ;
 
-ETrue.   	Exp2  	::= "true" ;
-EFalse.  	Exp2  	::= "false" ;
+-- Expressions
 EInt. 		Exp2 	::= Integer ;
+EChr.		Exp2 	::= Char ;
+EStr.		Exp2 	::= String ;
 EVar. 		Exp2 	::= Id ;
 EDiv. 		Exp1 	::= Exp1 "/" Exp2 ;
 EMul. 		Exp1 	::= Exp1 "*" Exp2 ;
@@ -45,9 +66,9 @@ ESub. 		Exp  	::= Exp  "-" Exp1 ;
 coercions Exp 2 ;
 
 token Id (letter (letter | digit | '_')*) ;
-token LLabel (letter (letter | digit | '_')+ ':')  ;
+token LLabel (letter (letter | digit | '_')+ ':') ;
 
--- rules Type   ::= "bool" | "uint8" ;
+rules Type   ::= "bool" | "char" | "byte" | "word" ;
 
 comment "`" ;
 comment "//" ;
