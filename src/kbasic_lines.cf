@@ -1,4 +1,7 @@
+entrypoints Program ;
+
 Prog.   	Program ::= [Stmt] ;
+
 
 FArg.		Arg		::=	Id ; -- Function arguments
 FPar.		Param	::=	Exp ; -- Function parameters
@@ -7,24 +10,26 @@ separator   Arg "," ;
 separator   Param "," ;
 
 -- Declarations
-DLetTA.		Decl3	::= Id "as" Type "=" Exp ;
-DLetT.		Decl3	::= Id "as" Type ;
-DLetA.		Decl3	::= Id "=" Exp ;
-DLetB.		Decl3	::= Id ;
-DGlbl.		Decl2	::= "global" Decl3 ;
-DLet.		Decl2	::= "let" Decl3 ;
-DSub.		Decl2	::= "sub" Id [Stmt] "return";
-DFnRt.		Decl1	::= "return" Exp ;
-DFnNR.		Decl1	::= "return" ;
-DFunc.		Decl	::= "func" Id "(" [Arg] ")" [Stmt] Decl1 ;
-DStruct.	Decl	::= "struct" Id [Decl3] "endstruct";
+DLetTA.		Decl4	::= Id "as" Type "=" Exp ;
+DLetT.		Decl4	::= Id "as" Type ;
+DLetA.		Decl4	::= Id "=" Exp ;
+DLetB.		Decl4	::= Id ;
+DGlbl.		Decl3	::= "global" Decl4 ;
+DLet.		Decl3	::= "let" Decl4 ;
+DSubE.		Decl2	::= "endsub" ;
+DSub.		Decl2	::= "sub" Id ;
+DFnER.		Decl1	::= "return" Exp ;
+DFnEN.		Decl1	::= "return" ;
+DFunc.		Decl	::= "func" Id "(" [Arg] ")" ;
+DStruct.	Decl	::= "struct" Id ;
+DStructE.	Decl	::= "endstruct";
 DLbl.		Decl	::= LLabel;
 
 terminator Decl3 "" ;
-coercions Decl 3 ;
+coercions Decl 4 ;
 
 -- Statements
--- SEval.		Stmt2 	::= Exp ;
+SEval.		Stmt2 	::= Exp ;
 SAsg. 		Stmt1	::= Id "=" Exp ;
 SDecl.		Stmt 	::= Decl ;
 SBra.		Stmt 	::= Branch ;
@@ -34,29 +39,33 @@ SGoSb.		Stmt 	::= "gosub" Id ;
 SAsm.		Stmt 	::= "_" String ;
 SCall.		Stmt 	::= Id "(" [Param] ")" ;
 
-coercions Stmt 1 ;
+coercions Stmt 2 ;
 
-terminator Stmt "" ;
+terminator Stmt ";" ;
+separator Stmt "" ;
 
 -- Loops
-LForN.		Loop1	::= "step" Exp [Stmt] "endfor" ;
-LForO.		Loop1	::= [Stmt] "endfor" ;
+LForE.		Loop2	::= "endfor" ;
+LForN.		Loop1	::= "step" Exp ;
+LForO.		Loop1	::= ;
 LFor.		Loop	::= "for" Stmt1 "to" Exp Loop1 ;
-LWhile.		Loop	::= "while" Exp [Stmt] "endwhile" ; 
-LRepeat.	Loop	::= "repeat" [Stmt] "until" Exp ;
+LWhile.		Loop	::= "while" Exp ; 
+LWhileE.	Loop	::= "endwhile" ; 
+LRepeat.	Loop	::= "repeat" ;
+LUntil.		Loop	::= "until" Exp ;
 
-coercions Loop 1 ;
+coercions Loop 2 ;
 
 -- Branching
-BIfEn.		Branch2 ::= "endif" ;
-BIfEl.		Branch1 ::= "else" [Stmt] Branch2 ;
-BIfEI.		Branch1 ::= "elif" Exp "then" [Stmt] Branch1 ;
-BIf.		Branch  ::= "if" Exp "then" [Stmt] Branch1 ;
+BIfE.		Branch ::= "endif" ;
+BIfEl.		Branch ::= "else" ;
+BIfEI.		Branch ::= "elif" Exp "then" ;
+BIf.		Branch  ::= "if" Exp "then" ;
 
-coercions Branch 2 ;
+-- coercions Branch 2 ;
 
 -- Expressions
-_.			Exp 	::= Exp1 ;
+_.			Exp 	::= Exp11 ;
 ELgOr.		Exp1  	::= Exp1 "or" Exp2;
 ELgAnd.		Exp2  	::= Exp2 "and" Exp3;
 EBitOr.		Exp3  	::= Exp3 "|" Exp4;
