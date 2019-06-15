@@ -18,6 +18,8 @@ org 0x200
 jmp	_start
 
 _global:
+	.stkpg:		db 0
+	.stkptr:	db 0
 
 _start:
 	; clear screen
@@ -28,41 +30,33 @@ _halt:
 	jmp	_halt
 
 sub_sum:
+	; pusha
 	mov I, _stack ;not enough, have to find current stack size and position
-	regd vf ; pusha
+	regd vF 
 
-	; pass through V regs dump
-	mov v0, 16
-	add I, v0
+	; a = 4
+	mov v0, 0
+	mov v1, 0x4
+	call stack_set_var
 
-	; a = 1
-	mov v0, 0x05
-	regd v0
-
-	; b = 2
+	; b = 5
 	mov v0, 1
-	add I, v0
-	mov v0, 0x05
-	regd v0
+	mov v1, 0x5
+	call stack_set_var
 
-	; let c
-	mov v0, 1
-	add I, v0
-	mov v0, 0x00
-	regd v0
+	; c = 0
+	mov v0, 2
+	mov v1, 0x0
+	call stack_set_var
 
 	; vE = a
-	mov I, _stack
-	mov v0, 16
-	add I, v0
-	regl v0
+	mov v0, 0
+	call stack_load_var
 	mov vE, v0
 
 	; vD = b
-	mov I, _stack
-	mov v0, 17
-	add I, v0
-	regl v0
+	mov v0, 1
+	call stack_load_var
 	mov vD, v0
 
 	; vE += vD
@@ -72,31 +66,51 @@ sub_sum:
 	
 	; EAsg (
 	; c = v0
-	mov I, _stack
-	mov v0, 18
-	add I, v0
-	mov v0, vE
-	regd v0
+	mov v1, v0
+	mov v0, 2
+	call stack_set_var
 	; ) EAsg
 
 	; draw( 0, 0, c )
-	mov I, _stack
-	mov v0, 18
-	add I, v0
-	regl v0
+	mov v0, 2
+	call stack_load_var
 
 	hex v0
 
 	mov v0, 0
 	mov v1, 0
 	drw v0, v1, 5
+	; ) draw
 
+	; popa
 	mov I, _stack
-	regl vf ; popa
-	ret
+	regl vF 
+ret
+
+; v0 var index
+jmp_stack_var:
+	mov I, _stack
+	add v0, 16 ; pass through regs store
+	add I, v0
+ret
+
+; v0 is var position
+; return value to v0
+stack_load_var:
+	call jmp_stack_var
+	regl v0
+ret
+
+; v0 is var position
+; v1 is for set value
+stack_set_var:
+	call jmp_stack_var
+	mov v0, v1
+	regd v0
+ret
 
 _stack:
-	; simulate run time
+; simulate run time
 ;	.sum: ; not fixed, generated at run time, calculated at compile time (a func/sub stack size < 256)
 ;		db 16 dup 0
 ;		; compiler has to keep track of local vars indexes
