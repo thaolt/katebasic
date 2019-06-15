@@ -116,8 +116,8 @@ token Id (letter (letter | digit | '_')*) ;
 token LLabel (letter (letter | digit | '_')+ ':') ;
 token NumBin ('%' ('0'|'1')+ ) ;
 token NumHex ('$' (digit | ["ABCDEF"] | ["abcdef"])+ ) ;
-token NumDec ( (digit)* ) ;
-token NumFloat ( (digit)* (('.') (digit)+)? ) ;
+token NumDec ( (digit)+ ) ;
+token NumFloat ( (digit)+ (('.') (digit)+)? ) ;
 
 
 
