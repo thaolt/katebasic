@@ -1,6 +1,6 @@
 # katebasic
 
-Originally I want to call it c8basic, but KateBASIC sounds better
+Originally, I called it c8basic, but wanted KateBASIC sounds much better
 
 # Install depedencies
 
