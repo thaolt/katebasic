@@ -7,14 +7,14 @@ org 0x200
 ; c = a + b
 ; draw( 0, 0, c )
 
-jmp	_code
+jmp	_start
 
 _global:
 	.a: db	0x01
 	.b: db	0x02
 	.c: db	0
 
-_code:
+_start:
 	; clear screen
 	cls
 	

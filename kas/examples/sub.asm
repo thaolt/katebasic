@@ -23,6 +23,7 @@ _global:
 	.reg_dump	db 16 dup 0
 
 _start:
+	hires
 	; clear screen
 	cls
 
@@ -36,17 +37,28 @@ _start:
 	mov v2, 0
 	drw v1, v2, 5
 
+	mov v0, 0xA
+	hex v0
+	mov v1, 12
+	drw v1, v2, 5
+
+	mov v0, 0xC
+	hex v0
+	mov v1, 18
+	drw v1, v2, 5
+
+	mov v0, 0xA
+	hex v0
+	mov v1, 24
+	drw v1, v2, 5
+
 _halt:
 	jmp	_halt
 
 _sub:
 	.sum:
-		; create stack
-		call global_regdump
-		call jmp_current_stack
-		; I to stack pointer
-		; 
-		regd F
+		pusha
+		; TODO: set stack size at beginning
 
 		; a = 4
 		mov v1, 0x4
@@ -100,66 +112,60 @@ _sub:
 	ret
 
 macro pusha?
-	call jmp_current_stack
+	call i_to_current_stack
 	regd vF
 end macro
 
 macro popa?
-	call jmp_current_stack
+	call i_to_current_stack
 	regl vF
 end macro
 
-jmp_current_stack:
+i_to_current_stack:
+	flgd v7
+
 	mov I, _global.stk_idx
 	regl v0
 	mov v1, v0
 
-	mov vA, 1
+	mov v2, 1
+	mov v3, 16
 	
 	mov I, _stack
 
 	.loop: 
 		sne v1, 0
 		jmp .endloop
+		add I, v3
 		regl v0
 		add I, v0
-		sub v1, vA
+		sub v1, v2
 		jmp .loop
 	.endloop:
 
-	add I, vA
+	flgl v7
 ret
 
 ; v0 var index
-jmp_stack_var:
-	call jmp_current_stack
-	add v0, 16 ; 16 regs
+i_stack_var:
+	call i_to_current_stack
+	add v0, 17 ; 16 regs + 1 byte stack size
 	add I, v0
 ret
 
 ; v0 is var position
 ; return value to v0
 stack_load_var:
-	call jmp_stack_var
+	call i_stack_var
 	regl v0
 ret
 
 ; v0 is var position
 ; v1 is for set value
 stack_set_var:
-	call jmp_stack_var
+	call i_stack_var
 	mov v0, v1
 	regd v0
-ret
-
-global_regdump:
-	mov I, _global.reg_dump
-	regd vF
-ret
-
-global_regload:
-	mov I, _global.reg_dump
-	regl vF
 ret
 
 _stack:
