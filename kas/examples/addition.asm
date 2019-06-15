@@ -10,14 +10,15 @@ org 0x200
 jmp	_code
 
 _global:
-	.a: db	0x05
-	.b: db	0x06
+	.a: db	0x01
+	.b: db	0x02
 	.c: db	0
 
 _code:
 	; clear screen
 	cls
 	
+	; EAdd (
 	; v1 = a
 	mov I, _global.a
 	regl v0
@@ -30,6 +31,7 @@ _code:
 
 	; v0 += v1
 	add v0, v1
+	; ) EAdd
 	
 	; c = v0
 	mov I, _global.c
@@ -38,7 +40,9 @@ _code:
 	; draw( 0, 0, c )
 	mov I, _global.c
 	regl v0
+
 	hex v0
+
 	mov v0, 0
 	mov v1, 0
 	drw v0, v1, 5

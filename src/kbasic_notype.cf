@@ -1,0 +1,119 @@
+Prog.   	Program ::= [Stmt] ;
+
+-- Statements
+SEval.		Stmt2 	::= Exp ;
+SAsg. 		Stmt1	::= Id "=" Exp ;
+SDecl.		Stmt 	::= Decl ;
+SBran.		Stmt 	::= Branch ;
+SLoop.		Stmt 	::= Loop ;
+SGoto.		Stmt 	::= "goto" Id ;
+SGoSb.		Stmt 	::= "gosub" Id ;
+SAsm.		Stmt 	::= "_" String ;
+SCall.		Stmt 	::= Id "(" [Param] ")" ;
+
+coercions Stmt 2 ;
+terminator Stmt "" ;
+
+-- Function parameters
+FPar.		Param	::=	Exp ; 
+separator   Param "," ;
+
+-- Declarations
+DLetA.		Decl4	::= Id "=" Exp ;
+_.			Decl3	::= Decl4 ;
+DLetTA.		Decl3	::= Id "as" Type "=" Exp ;
+DLetT.		Decl3	::= Id "as" Type ;
+DLetB.		Decl3	::= Id ;
+DGlbl.		Decl2	::= "global" Decl3 ;
+DLet.		Decl2	::= "let" Decl3 ;
+DSub.		Decl2	::= "sub" Id [Stmt] "return";
+DFnRt.		Decl1	::= "return" Exp ;
+DFnNR.		Decl1	::= "return" ;
+DFunc.		Decl	::= "func" Id "(" [Arg] ")" [Stmt] Decl1 ;
+DStruct.	Decl	::= "struct" Id [Decl3] "endstruct";
+DLbl.		Decl	::= LLabel;
+
+terminator Decl3 "" ;
+terminator Decl4 "" ;
+coercions Decl 4 ;
+
+-- Function arguments
+FArg.		Arg		::=	Id ; 
+separator   Arg "," ;
+
+-- Loops
+LForN.		Loop1	::= "step" Exp [Stmt] "endfor" ;
+LForO.		Loop1	::= [Stmt] "endfor" ;
+LFor.		Loop	::= "for" Decl4 "to" Exp Loop1 ;
+LWhile.		Loop	::= "while" Exp [Stmt] "endwhile" ; 
+LRepeat.	Loop	::= "repeat" [Stmt] "until" Exp ;
+
+coercions Loop 1 ;
+
+-- Branching
+BIfEn.		Branch2 ::= "endif" ;
+BIfEl.		Branch1 ::= "else" [Stmt] Branch2 ;
+BIfEI.		Branch1 ::= "elif" Exp "then" [Stmt] Branch1 ;
+BIf.		Branch  ::= "if" Exp "then" [Stmt] Branch1 ;
+
+coercions Branch 2 ;
+
+-- Expressions
+_.			Exp 	::= Exp ;
+ELgOr.		Exp1  	::= Exp1 "or" Exp2;
+ELgAnd.		Exp2  	::= Exp2 "and" Exp3;
+EBitOr.		Exp3  	::= Exp3 "|" Exp4;
+EBitXor.	Exp4  	::= Exp4 "^" Exp5;
+EBitAnd.	Exp5  	::= Exp5 "&" Exp6;
+ELgEq.		Exp6  	::= Exp6 "==" Exp7;
+ELgNe.		Exp6  	::= Exp6 "!=" Exp7;
+ELgLt.		Exp7 	::= Exp7 "<" Exp8;
+ELgGt.		Exp7 	::= Exp7 ">" Exp8;
+ELgLte.		Exp7 	::= Exp7 "<=" Exp8;
+ELgGte.		Exp7 	::= Exp7 ">=" Exp8;
+EBitShl.	Exp8 	::= Exp8 "<<" Exp9;
+EBitShr.	Exp8 	::= Exp8 ">>" Exp9;
+EAdd. 		Exp9  	::= Exp9 "+" Exp10 ;
+ESub. 		Exp9  	::= Exp9  "-" Exp10 ;
+EDiv. 		Exp10 	::= Exp10 "/" Exp11 ;
+EMul. 		Exp10 	::= Exp10 "*" Exp11 ;
+EMod. 		Exp10 	::= Exp10 "mod" Exp11 ;
+_.			Exp11 	::= "(" Exp ")" ;
+EConst.		Exp12 	::= Const ;
+EVar. 		Exp12 	::= Id ;
+
+coercions Exp 12 ;
+
+-- Constants
+CNum.		Const	::= Number ;
+CStr.		Const	::= String ;
+CChr.		Const	::= Char ;
+
+-- Numbers
+NDec.		Number 	::= NumDec ;
+NBin.		Number 	::= NumBin ;
+NHex.		Number 	::= NumHex ;
+
+
+TByte.		Type1  	::= "byte" ;
+--TWord.		Type1	::= "word" ;
+--TDWord.		Type1	::= "dword" ;
+--TQWord.		Type1	::= "qword" ;
+--TDQWord.	Type1	::= "dqword" ;
+TArr.		Type	::= Type1 "[" Number "]" ;
+_.			Type	::= Type1 ;
+
+coercions Type 1 ;
+
+comment "//" ;
+comment "/*" "*/" ;
+
+token Id (letter (letter | digit | '_')*) ;
+token LLabel (letter (letter | digit | '_')+ ':') ;
+token NumBin ('%' ('0'|'1')+ ) ;
+token NumHex ('$' (digit | ["ABCDEF"] | ["abcdef"])+ ) ;
+token NumDec ( ["123456789"] (digit)* ) ;
+token NumFloat ( ["123456789"] (digit)* (('.') (digit)+)? ) ;
+
+
+
