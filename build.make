@@ -1,3 +1,4 @@
 
 all:
-	bnfc -m --c ../src/kbasic.cf
+	bnfc -m --c ../grammars/kbasic.cf -o chip8
+	bnfc -m --java ../grammars/kbasic.cf -o java
