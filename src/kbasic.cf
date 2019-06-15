@@ -1,8 +1,10 @@
 Prog.   	Program ::= [Stmt] ;
 
 -- Statements
-SEval.		Stmt2 	::= Exp ;
-SAsg. 		Stmt1	::= Id "=" Exp ;
+SEval.		Stmt3 	::= Exp ;
+SAsgArr.	Stmt2	::= Id "[" Number "]" ;
+SAsgVar.	Stmt2	::= Id ;
+SAsg. 		Stmt1	::= Stmt2 "=" Exp ;
 SDecl.		Stmt 	::= Decl ;
 SBran.		Stmt 	::= Branch ;
 SLoop.		Stmt 	::= Loop ;
@@ -11,7 +13,7 @@ SGoSb.		Stmt 	::= "gosub" Id ;
 SAsm.		Stmt 	::= "_" String ;
 SCall.		Stmt 	::= Id "(" [Param] ")" ;
 
-coercions Stmt 2 ;
+coercions Stmt 3 ;
 terminator Stmt "" ;
 
 -- Function parameters
@@ -81,8 +83,10 @@ EMod. 		Exp10 	::= Exp10 "mod" Exp11 ;
 _.			Exp11 	::= "(" Exp ")" ;
 EConst.		Exp12 	::= Const ;
 EVar. 		Exp12 	::= Id ;
+_.			Exp12 	::= Exp13 ;
+EArrV.		Exp13 	::= Id "[" Number "]" ;
 
-coercions Exp 12 ;
+coercions Exp 13 ;
 
 -- Constants
 CNum.		Const	::= Number ;
@@ -112,8 +116,8 @@ token Id (letter (letter | digit | '_')*) ;
 token LLabel (letter (letter | digit | '_')+ ':') ;
 token NumBin ('%' ('0'|'1')+ ) ;
 token NumHex ('$' (digit | ["ABCDEF"] | ["abcdef"])+ ) ;
-token NumDec ( ["123456789"] (digit)* ) ;
-token NumFloat ( ["123456789"] (digit)* (('.') (digit)+)? ) ;
+token NumDec ( (digit)* ) ;
+token NumFloat ( (digit)* (('.') (digit)+)? ) ;
 
 
 
