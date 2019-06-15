@@ -22,20 +22,23 @@ _code:
 	; v1 = a
 	mov I, _global.a
 	regl v0
-	mov v1, v0
+	mov vE, v0
 
 	; v1 = b
 	mov I, _global.b
 	regl v0
-	mov v2, v0
+	mov vD, v0
 
 	; v0 += v1
-	add v0, v1
+	add vE, vd
+	mov v0, ve
 	; ) EAdd
 	
+	; EAsg (
 	; c = v0
 	mov I, _global.c
-	regd v0 
+	regd v0
+	; ) EAsg
 
 	; draw( 0, 0, c )
 	mov I, _global.c
