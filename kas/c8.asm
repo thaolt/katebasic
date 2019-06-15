@@ -110,7 +110,6 @@ macro mov? dst, src
 			match [:rs:], src  ;mov vx, vy
 				if rs < 0x10
 					dw ((0x8000 or (rd shl 8)) or rs shl 4) bswap 2
-					reg.dst = reg.src
 				else
 					error "invalid instruction"
 				end if
@@ -165,10 +164,22 @@ end macro ;mov
 
 macro add? dst, src
 	match [:rx:], dst
-		if rx < 0x10 ;add vx, nn
-			dw ((0x7000 or (rx shl 8)) or src) bswap 2
+		if rx < 0x10 
+			match [:ry:], src ;add vx, vy
+				if ry < 0x10
+					dw ((0x8004 or (rx shl 8)) or (ry shl 4)) bswap 2
+				else
+					error "invalid register"
+				end if
+			else ;add vx, nn
+				if src < 0x100
+					dw ((0x7000 or (rx shl 8)) or src) bswap 2
+				else
+					error "out of range"
+				end if
+			end match
 		else
-			error "invalid register"
+			error "invalid dest"
 		end if
 	else match =i?, dst ;add i, vx
 		match [:rs:], src
@@ -509,10 +520,10 @@ macro regd? rx
 	end match
 end macro
 
-macro regr? rx
+macro regl? rx
 	match [:x:], rx
 		if x < 0x10
-			dw (0xF065 (x shl 8)) bswap 2
+			dw (0xF065 or (x shl 8)) bswap 2
 		else
 			error "invalid instruction"
 		end if
@@ -533,7 +544,7 @@ macro flgd? rx
 	end match
 end macro
 
-macro flgr? rx
+macro flgl? rx
 	match [:x:], rx
 		if x < 0x8
 			dw (0xF085 or (x shl 8)) bswap 2
@@ -545,6 +556,3 @@ macro flgr? rx
 	end match
 end macro
 
-macro halt?
-	jmp $
-end macro
