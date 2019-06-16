@@ -1,8 +1,15 @@
-Prog.   	Program ::= [Stmt] ;
+entrypoints Program ;
+
+Prog.		Program ::= [Line] ;
+
+PLDecl.		Line ::= PDecl ;
+PStmt.		Line ::= Stmt ;
+
+terminator Line "" ;
 
 -- Statements
 SEval.		Stmt3 	::= Exp ;
-SAsgArr.	Stmt2	::= Id "[" Number "]" ;
+SAsgArr.	Stmt2	::= Id "[" Exp "]" ;
 SAsgVar.	Stmt2	::= Id ;
 SAsg. 		Stmt1	::= Stmt2 "=" Exp ;
 SDecl.		Stmt 	::= Decl ;
@@ -21,23 +28,27 @@ FPar.		Param	::=	Exp ;
 separator   Param "," ;
 
 -- Declarations
-DLetA.		Decl4	::= Id "=" Exp ;
-_.			Decl3	::= Decl4 ;
-DLetTA.		Decl3	::= Id "as" Type "=" Exp ;
-DLetT.		Decl3	::= Id "as" Type ;
-DLetB.		Decl3	::= Id ;
-DGlbl.		Decl2	::= "global" Decl3 ;
-DLet.		Decl2	::= "let" Decl3 ;
-DSub.		Decl2	::= "sub" Id [Stmt] "return";
-DFnRt.		Decl1	::= "return" Exp ;
-DFnNR.		Decl1	::= "return" ;
-DFunc.		Decl	::= "func" Id "(" [Arg] ")" [Stmt] Decl1 ;
-DStruct.	Decl	::= "struct" Id [Decl3] "endstruct";
+DFnRt.		PDecl1	::= "return" Exp ;
+DFnNR.		PDecl1	::= "return" ;
+DGlbl.		PDecl	::= "global" Decl1 ;
+DSub.		PDecl	::= "sub" Id [Stmt] "return";
+DFunc.		PDecl	::= "func" Id "(" [Arg] ")" [Stmt] PDecl1 ;
+DStruct.	PDecl	::= "struct" Id [Decl1] "endstruct";
+
+terminator PDecl "" ;
+
+DLetA.		Decl2	::= Id "=" Exp ;
+_.			Decl1	::= Decl2 ;
+DLetTA.		Decl1	::= Id "as" Type "=" Exp ;
+DLetT.		Decl1	::= Id "as" Type ;
+DLetB.		Decl1	::= Id ;
+DLet.		Decl	::= "let" Decl1 ;
 DLbl.		Decl	::= Llabel ;
 
-terminator Decl3 "" ;
-terminator Decl4 "" ;
-coercions Decl 2 ;
+
+terminator Decl2 "" ;
+terminator Decl1 "" ;
+--coercions Decl 2 ;
 
 -- Function arguments
 FArg.		Arg		::=	Id ; 
@@ -46,7 +57,7 @@ separator   Arg "," ;
 -- Loops
 LForN.		Loop1	::= "step" Exp [Stmt] "endfor" ;
 LForO.		Loop1	::= [Stmt] "endfor" ;
-LFor.		Loop	::= "for" Decl4 "to" Exp Loop1 ;
+LFor.		Loop	::= "for" Decl2 "to" Exp Loop1 ;
 LWhile.		Loop	::= "while" Exp [Stmt] "endwhile" ; 
 LRepeat.	Loop	::= "repeat" [Stmt] "until" Exp ;
 
