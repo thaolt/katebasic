@@ -24,12 +24,12 @@ int main(int argc, char ** argv)
   parse_tree = pProgram(input);
   if (parse_tree)
   {
-    printf("\nParse Succesful!\n");
+    /* printf("\nParse Succesful!\n");
     printf("\n[Abstract Syntax]\n");
     printf("%s\n\n", showProgram(parse_tree));
     printf("[Linearized Tree]\n");
-    printf("%s\n\n", printProgram(parse_tree));
-    printf("[Assembly]\n");
+    printf("%s\n\n", printProgram(parse_tree)); */
+    printf("; Chip8 Assembly\n");
     initCodeGen();
     visitProgram(parse_tree);
     return 0;

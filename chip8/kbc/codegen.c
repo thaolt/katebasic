@@ -28,40 +28,61 @@ UT_array *ostart;
 UT_array *ofunc;
 UT_array *omemstack;
 
+char cnumRet = 0;
+
 void initCodeGen()
 {
   char* line = NULL;
   utarray_new(oheaders, &ut_str_icd);
+  line = "include 'c8.asm'";    utarray_push_back(oheaders, &line);
+  line = "org 0x200";           utarray_push_back(oheaders, &line); 
+  line = "";                    utarray_push_back(oheaders, &line);
+  line = "jmp start";           utarray_push_back(oheaders, &line);
 
   utarray_new(oglobals, &ut_str_icd);
+  line = "";                    utarray_push_back(oglobals, &line);
   line = "global:";             utarray_push_back(oglobals, &line); 
 
   utarray_new(ostart,   &ut_str_icd);
+  line = "";                    utarray_push_back(ostart, &line);
   line = "start:";              utarray_push_back(ostart, &line); 
 
   utarray_new(ofunc,    &ut_str_icd);
+  line = "";                    utarray_push_back(ofunc, &line);
   line = "func:";               utarray_push_back(ofunc, &line); 
   
   utarray_new(omemstack,&ut_str_icd);
+  line = "";                    utarray_push_back(omemstack, &line);
   line = "memstk:";             utarray_push_back(omemstack, &line); 
 }
 
 
 void visitProgram(Program _p_)
 {
-  char* line = NULL;
+  char* line = 0;
   switch(_p_->kind)
   {
   case is_Prog:
-    line = "include 'c8.asm'";  utarray_push_back(oheaders, &line);
-    line = "org 0x200";         utarray_push_back(oheaders, &line); 
-    line = "";                  utarray_push_back(oheaders, &line);
-    line = "jmp start";         utarray_push_back(oheaders, &line);
-
     visitListStmt(_p_->u.prog_.liststmt_);
 
-    char **p = NULL;
+    char **p = 0;
     while ( (p=(char**)utarray_next(oheaders,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(oglobals,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(ostart,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(ofunc,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(omemstack,p))) {
       printf("%s\n",*p);
     }
 
@@ -163,17 +184,37 @@ char is_global_decl = 0;
 char expRetType = 0;
 char expRetValue = 0;
 char idRetValue[50] = {0};
+char is_exp_const = 0;
 
 
 void visitDecl(Decl _p_)
 {
-  char *line = NULL;
+  char *line = malloc(100);
+
   switch(_p_->kind)
   {
   case is_DLetA:
-    line
     visitId(_p_->u.dleta_.id_);
-    visitExp(_p_->u.dleta_.exp_);
+    if (is_global_decl) {
+      
+      memset(line, 0, 100);
+      strcat(line, "\t.");
+      strcat(line, idRetValue);
+
+      visitExp(_p_->u.dleta_.exp_);
+      strcat(line, "\tdb\t");
+
+      if (is_exp_const) {
+        char num[50] = {0};
+        snprintf(num, 50,"%d",cnumRet);
+        strcat(line, num);
+      } else
+        strcat(line, "0");
+
+      utarray_push_back(oglobals, &line); 
+    } else {
+      visitExp(_p_->u.dleta_.exp_);
+    }
     break;  case is_DLetTA:
     /* Code for DLetTA Goes Here */
     visitId(_p_->u.dletta_.id_);
@@ -370,11 +411,22 @@ void visitExp(Exp _p_)
     /* Code for EBitShr Goes Here */
     visitExp(_p_->u.ebitshr_.exp_1);
     visitExp(_p_->u.ebitshr_.exp_2);
-    break;  case is_EAdd:
-    /* Code for EAdd Goes Here */
-    visitExp(_p_->u.eadd_.exp_1);
-    visitExp(_p_->u.eadd_.exp_2);
-    break;  case is_ESub:
+    break;  
+    case is_EAdd: {
+      /* Code for EAdd Goes Here */
+      visitExp(_p_->u.eadd_.exp_1);
+      char exp1_const = is_exp_const;
+      char cnum1 = cnumRet;
+      visitExp(_p_->u.eadd_.exp_2);
+      char exp2_const = is_exp_const;
+      char cnum2 = cnumRet;
+      if (exp1_const && exp2_const) {
+        cnumRet = cnum1 + cnum2;
+      } else {
+        is_exp_const = 0;
+      }
+    } break;  
+    case is_ESub:
     /* Code for ESub Goes Here */
     visitExp(_p_->u.esub_.exp_1);
     visitExp(_p_->u.esub_.exp_2);
@@ -393,9 +445,11 @@ void visitExp(Exp _p_)
     break;  case is_EConst:
     /* Code for EConst Goes Here */
     visitConst(_p_->u.econst_.const_);
+    is_exp_const = 1;
     break;  case is_EVar:
     /* Code for EVar Goes Here */
     visitId(_p_->u.evar_.id_);
+    is_exp_const = 0;
     break;  case is_EArrV:
     /* Code for EArrV Goes Here */
     visitId(_p_->u.earrv_.id_);
@@ -482,6 +536,8 @@ void visitType(Type _p_)
   }
 }
 
+
+
 void visitId(Id p)
 {
   strncpy(idRetValue, p, 50);
@@ -500,7 +556,7 @@ void visitNumhex(Numhex p)
 }
 void visitNumdec(Numdec p)
 {
-  /* Code for Numdec Goes Here */
+  cnumRet = atoi(p);
 }
 void visitIdent(Ident i)
 {
