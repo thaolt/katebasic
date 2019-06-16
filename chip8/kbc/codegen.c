@@ -10,16 +10,24 @@
 #define ERETVAR   1
 #define ERETREG   2
 
+#define CRETNUM   0
+#define CRETCHAR  0
+#define CRETARR   0
+
 #include "uthash.h"
 #include "utarray.h"
 
 /* ======= RETURNS */
+/* --- Ids */
+char    retId[50]         = {0};
+/* --- Numbers */
+uint8_t retNum            = 0;
 /* --- Constants */
-
+uint8_t retConst          = 0;
 /* --- Expressions */
 uint8_t retExpType        = 0;
-uint8_t retExpConstValue  = 0;
-char    retIdent[50]      = {0};
+uint8_t retExpConst       = 0;
+char    retExpId[50]      = {0};
 
 /* --- Declarations */
 /* ======= OUTPUT */
@@ -28,6 +36,7 @@ UT_array *oglobals;
 UT_array *ostart;
 UT_array *ofunc;
 UT_array *omemstack;
+/* ======= LOOKUP TABLES */
 
 /* ======= SCOPES */
 
@@ -36,11 +45,15 @@ UT_array *omemstack;
 /* ======= UTILITIES */
 static void _asm(UT_array *section, const char *fmt, ...) {
   char *line = (char*) calloc(100, sizeof(char));
+  
   va_list args;
+
   va_start(args, fmt);
-  snprintf(line, 100, fmt, args);
-  utarray_push_back(section, &line);
+  vsnprintf(line, 100, fmt, args);
   va_end(args);
+
+  utarray_push_back(section, &line);
+
   free(line);
 }
 
@@ -221,32 +234,90 @@ void visitListParam(ListParam listparam)
   }
 }
 
+void declareGlobal(Decl _p_) {
+  char varName[50] = {0};
+
+  /* TODO: check for duplication name */
+
+  Type varType = make_TByte();
+  uint8_t valueExpType = ERETCONST;
+  uint8_t value = 0;
+
+  switch(_p_->kind)
+  {
+    case is_DLetA:
+      visitId(_p_->u.dleta_.id_);
+      strcpy(varName, retId);
+
+      visitExp(_p_->u.dleta_.exp_);
+      valueExpType = retExpType;
+      if (valueExpType == ERETCONST)
+        value = retExpConst;
+    break;
+
+    case is_DLetTA:
+      visitId(_p_->u.dletta_.id_);
+      strcpy(varName, retId);
+
+      visitType(_p_->u.dletta_.type_);
+
+      visitExp(_p_->u.dletta_.exp_);
+      valueExpType = retExpType;
+      if (valueExpType == ERETCONST)
+        value = retExpConst;
+    break;
+
+    case is_DLetT:
+      visitId(_p_->u.dlett_.id_);
+      strcpy(varName, retId);
+
+      visitType(_p_->u.dlett_.type_);
+    break;
+
+    case is_DLetB:
+      /* Code for DLetB Goes Here */
+      visitId(_p_->u.dletb_.id_);
+      strcpy(varName, retId);
+    break;
+
+    default:
+      fprintf(stderr, "Error: bad kind field when printing Decl!\n");
+      exit(1);
+  }
+
+
+  _asm(oglobals, "\t.%s\tdb\t%d", varName, value);
+}
+
 void visitPDecl(PDecl _p_)
 {
   switch(_p_->kind)
   {
   case is_DFnRt:
-    /* Code for DFnRt Goes Here */
+      /* Code for DFnRt Goes Here */
     visitExp(_p_->u.dfnrt_.exp_);
     break;  case is_DFnNR:
-    /* Code for DFnNR Goes Here */
-    break;  case is_DGlbl:
-    /* Code for DGlbl Goes Here */
-    visitDecl(_p_->u.dglbl_.decl_);
-    break;  case is_DSub:
-    /* Code for DSub Goes Here */
-    visitId(_p_->u.dsub_.id_);
-    visitListStmt(_p_->u.dsub_.liststmt_);
-    break;  case is_DFunc:
-    /* Code for DFunc Goes Here */
-    visitId(_p_->u.dfunc_.id_);
-    visitListArg(_p_->u.dfunc_.listarg_);
-    visitListStmt(_p_->u.dfunc_.liststmt_);
-    visitPDecl(_p_->u.dfunc_.pdecl_);
-    break;  case is_DStruct:
-    /* Code for DStruct Goes Here */
-    visitId(_p_->u.dstruct_.id_);
-    visitListDecl(_p_->u.dstruct_.listdecl_);
+      /* Code for DFnNR Goes Here */
+    break;
+    case is_DGlbl:
+      declareGlobal(_p_->u.dglbl_.decl_);
+    break;
+    case is_DSub:
+      /* Code for DSub Goes Here */
+      visitId(_p_->u.dsub_.id_);
+      visitListStmt(_p_->u.dsub_.liststmt_);
+    break;
+    case is_DFunc:
+      /* Code for DFunc Goes Here */
+      visitId(_p_->u.dfunc_.id_);
+      visitListArg(_p_->u.dfunc_.listarg_);
+      visitListStmt(_p_->u.dfunc_.liststmt_);
+      visitPDecl(_p_->u.dfunc_.pdecl_);
+    break;
+    case is_DStruct:
+      /* Code for DStruct Goes Here */
+      visitId(_p_->u.dstruct_.id_);
+      visitListDecl(_p_->u.dstruct_.listdecl_);
     break;
   default:
     fprintf(stderr, "Error: bad kind field when printing PDecl!\n");
@@ -393,92 +464,114 @@ void visitExp(Exp _p_)
 {
   switch(_p_->kind)
   {
-  case is_ELgOr:
-    /* Code for ELgOr Goes Here */
-    visitExp(_p_->u.elgor_.exp_1);
-    visitExp(_p_->u.elgor_.exp_2);
-    break;  case is_ELgAnd:
-    /* Code for ELgAnd Goes Here */
-    visitExp(_p_->u.elgand_.exp_1);
-    visitExp(_p_->u.elgand_.exp_2);
-    break;  case is_EBitOr:
-    /* Code for EBitOr Goes Here */
-    visitExp(_p_->u.ebitor_.exp_1);
-    visitExp(_p_->u.ebitor_.exp_2);
-    break;  case is_EBitXor:
-    /* Code for EBitXor Goes Here */
-    visitExp(_p_->u.ebitxor_.exp_1);
-    visitExp(_p_->u.ebitxor_.exp_2);
-    break;  case is_EBitAnd:
-    /* Code for EBitAnd Goes Here */
-    visitExp(_p_->u.ebitand_.exp_1);
-    visitExp(_p_->u.ebitand_.exp_2);
-    break;  case is_ELgEq:
-    /* Code for ELgEq Goes Here */
-    visitExp(_p_->u.elgeq_.exp_1);
-    visitExp(_p_->u.elgeq_.exp_2);
-    break;  case is_ELgNe:
-    /* Code for ELgNe Goes Here */
-    visitExp(_p_->u.elgne_.exp_1);
-    visitExp(_p_->u.elgne_.exp_2);
-    break;  case is_ELgLt:
-    /* Code for ELgLt Goes Here */
-    visitExp(_p_->u.elglt_.exp_1);
-    visitExp(_p_->u.elglt_.exp_2);
-    break;  case is_ELgGt:
-    /* Code for ELgGt Goes Here */
-    visitExp(_p_->u.elggt_.exp_1);
-    visitExp(_p_->u.elggt_.exp_2);
-    break;  case is_ELgLte:
-    /* Code for ELgLte Goes Here */
-    visitExp(_p_->u.elglte_.exp_1);
-    visitExp(_p_->u.elglte_.exp_2);
-    break;  case is_ELgGte:
-    /* Code for ELgGte Goes Here */
-    visitExp(_p_->u.elggte_.exp_1);
-    visitExp(_p_->u.elggte_.exp_2);
-    break;  case is_EBitShl:
-    /* Code for EBitShl Goes Here */
-    visitExp(_p_->u.ebitshl_.exp_1);
-    visitExp(_p_->u.ebitshl_.exp_2);
-    break;  case is_EBitShr:
-    /* Code for EBitShr Goes Here */
-    visitExp(_p_->u.ebitshr_.exp_1);
-    visitExp(_p_->u.ebitshr_.exp_2);
-    break;  case is_EAdd:
-    /* Code for EAdd Goes Here */
-    visitExp(_p_->u.eadd_.exp_1);
-    visitExp(_p_->u.eadd_.exp_2);
-    break;  case is_ESub:
-    /* Code for ESub Goes Here */
-    visitExp(_p_->u.esub_.exp_1);
-    visitExp(_p_->u.esub_.exp_2);
-    break;  case is_EDiv:
-    /* Code for EDiv Goes Here */
-    visitExp(_p_->u.ediv_.exp_1);
-    visitExp(_p_->u.ediv_.exp_2);
-    break;  case is_EMul:
-    /* Code for EMul Goes Here */
-    visitExp(_p_->u.emul_.exp_1);
-    visitExp(_p_->u.emul_.exp_2);
-    break;  case is_EMod:
-    /* Code for EMod Goes Here */
-    visitExp(_p_->u.emod_.exp_1);
-    visitExp(_p_->u.emod_.exp_2);
-    break;  case is_EConst:
-    /* Code for EConst Goes Here */
-    visitConst(_p_->u.econst_.const_);
-    break;  case is_EVar:
-    /* Code for EVar Goes Here */
-    visitId(_p_->u.evar_.id_);
-    break;  case is_EArrV:
-    /* Code for EArrV Goes Here */
-    visitId(_p_->u.earrv_.id_);
-    visitNumber(_p_->u.earrv_.number_);
+    case is_ELgOr:
+      /* Code for ELgOr Goes Here */
+      visitExp(_p_->u.elgor_.exp_1);
+      visitExp(_p_->u.elgor_.exp_2);
     break;
-  default:
-    fprintf(stderr, "Error: bad kind field when printing Exp!\n");
-    exit(1);
+    case is_ELgAnd:
+      /* Code for ELgAnd Goes Here */
+      visitExp(_p_->u.elgand_.exp_1);
+      visitExp(_p_->u.elgand_.exp_2);
+    break;
+    case is_EBitOr:
+      /* Code for EBitOr Goes Here */
+      visitExp(_p_->u.ebitor_.exp_1);
+      visitExp(_p_->u.ebitor_.exp_2);
+    break;
+    case is_EBitXor:
+      /* Code for EBitXor Goes Here */
+      visitExp(_p_->u.ebitxor_.exp_1);
+      visitExp(_p_->u.ebitxor_.exp_2);
+    break;
+    case is_EBitAnd:
+      /* Code for EBitAnd Goes Here */
+      visitExp(_p_->u.ebitand_.exp_1);
+      visitExp(_p_->u.ebitand_.exp_2);
+    break;
+    case is_ELgEq:
+      /* Code for ELgEq Goes Here */
+      visitExp(_p_->u.elgeq_.exp_1);
+      visitExp(_p_->u.elgeq_.exp_2);
+    break;
+    case is_ELgNe:
+      /* Code for ELgNe Goes Here */
+      visitExp(_p_->u.elgne_.exp_1);
+      visitExp(_p_->u.elgne_.exp_2);
+    break;
+    case is_ELgLt:
+      /* Code for ELgLt Goes Here */
+      visitExp(_p_->u.elglt_.exp_1);
+      visitExp(_p_->u.elglt_.exp_2);
+    break;
+    case is_ELgGt:
+      /* Code for ELgGt Goes Here */
+      visitExp(_p_->u.elggt_.exp_1);
+      visitExp(_p_->u.elggt_.exp_2);
+    break;
+    case is_ELgLte:
+      /* Code for ELgLte Goes Here */
+      visitExp(_p_->u.elglte_.exp_1);
+      visitExp(_p_->u.elglte_.exp_2);
+    break;
+    case is_ELgGte:
+      /* Code for ELgGte Goes Here */
+      visitExp(_p_->u.elggte_.exp_1);
+      visitExp(_p_->u.elggte_.exp_2);
+    break;
+    case is_EBitShl:
+      /* Code for EBitShl Goes Here */
+      visitExp(_p_->u.ebitshl_.exp_1);
+      visitExp(_p_->u.ebitshl_.exp_2);
+    break;
+    case is_EBitShr:
+      /* Code for EBitShr Goes Here */
+      visitExp(_p_->u.ebitshr_.exp_1);
+      visitExp(_p_->u.ebitshr_.exp_2);
+    break;
+    case is_EAdd:
+      /* Code for EAdd Goes Here */
+      visitExp(_p_->u.eadd_.exp_1);
+      visitExp(_p_->u.eadd_.exp_2);
+    break;
+    case is_ESub:
+      /* Code for ESub Goes Here */
+      visitExp(_p_->u.esub_.exp_1);
+      visitExp(_p_->u.esub_.exp_2);
+    break;
+    case is_EDiv:
+      /* Code for EDiv Goes Here */
+      visitExp(_p_->u.ediv_.exp_1);
+      visitExp(_p_->u.ediv_.exp_2);
+    break;
+    case is_EMul:
+      /* Code for EMul Goes Here */
+      visitExp(_p_->u.emul_.exp_1);
+      visitExp(_p_->u.emul_.exp_2);
+    break;
+    case is_EMod:
+      /* Code for EMod Goes Here */
+      visitExp(_p_->u.emod_.exp_1);
+      visitExp(_p_->u.emod_.exp_2);
+    break;  
+    case is_EConst:
+      visitConst(_p_->u.econst_.const_);
+      retExpType = ERETCONST;
+      retExpConst = retNum;
+    break;  
+    case is_EVar:
+      /* Code for EVar Goes Here */
+      visitId(_p_->u.evar_.id_);
+    break;
+    case is_EArrV:
+      /* Code for EArrV Goes Here */
+      visitId(_p_->u.earrv_.id_);
+      visitNumber(_p_->u.earrv_.number_);
+    break;
+
+    default:
+      fprintf(stderr, "Error: bad kind field when printing Exp!\n");
+      exit(1);
   }
 }
 
@@ -494,7 +587,7 @@ void visitConst(Const _p_)
     visitChar(_p_->u.cchr_.char_);
     break;  case is_CArr:
     /* Code for CArr Goes Here */
-    visitListExp(_p_->u.carr_.listexp_);
+    visitListConst(_p_->u.carr_.listconst_);
     break;
   default:
     fprintf(stderr, "Error: bad kind field when printing Const!\n");
@@ -502,13 +595,13 @@ void visitConst(Const _p_)
   }
 }
 
-void visitListExp(ListExp listexp)
+void visitListConst(ListConst listconst)
 {
-  while(listexp != 0)
+  while(listconst != 0)
   {
-    /* Code For ListExp Goes Here */
-    visitExp(listexp->exp_);
-    listexp = listexp->listexp_;
+    /* Code For ListConst Goes Here */
+    visitConst(listconst->const_);
+    listconst = listconst->listconst_;
   }
 }
 
@@ -559,7 +652,7 @@ void visitType(Type _p_)
 
 void visitId(Id p)
 {
-  /* Code for Id Goes Here */
+  strcpy(retId, p);
 }
 void visitLlabel(Llabel p)
 {
@@ -575,7 +668,7 @@ void visitNumhex(Numhex p)
 }
 void visitNumdec(Numdec p)
 {
-  /* Code for Numdec Goes Here */
+  retNum = atoi(p);
 }
 void visitIdent(Ident i)
 {

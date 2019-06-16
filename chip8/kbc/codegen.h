@@ -22,7 +22,7 @@ void visitLoop(Loop p);
 void visitBranch(Branch p);
 void visitExp(Exp p);
 void visitConst(Const p);
-void visitListExp(ListExp p);
+void visitListConst(ListConst p);
 void visitNumber(Number p);
 void visitType(Type p);
 

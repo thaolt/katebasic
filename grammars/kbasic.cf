@@ -100,13 +100,14 @@ EArrV.		Exp13 	::= Id "[" Number "]" ;
 coercions Exp 13 ;
 
 -- Constants
-CNum.			Const 	::= Number ;
+CNum.		Const1 	::= Number ;
+_.			Const 	::= Const1 ;
 CChr.		Const	::= Char ;
-CArr.		Const	::= "{" [Exp] "}" ;
+CArr.		Const	::= "{" [Const1] "}" ;
 -- CStr.		Const	::= String ;
 
-separator Exp "," ;
--- coercions Const 1 ;
+separator Const1 "," ;
+coercions Const 1 ;
 
 -- Numbers
 NDec.		Number 	::= Numdec ;
