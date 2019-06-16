@@ -14,7 +14,11 @@ sudo apt install bnfc flex bison
 make
 ```
 
-# Language syntax
+# KateBasic Programming Language 
+
+## Types
+
+Currently there is only one type: `byte`
 
 ## Comment
 
