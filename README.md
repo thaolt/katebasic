@@ -8,7 +8,7 @@ Originally, I called it c8basic, but wanted KateBASIC, sounds much better
 sudo apt install bnfc flex bison
 ```
 
-# Building KateBASIC
+# Building
 
 ```
 make
