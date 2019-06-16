@@ -14,10 +14,12 @@
 #include "utarray.h"
 
 /* ======= RETURNS */
-/* --- Expression */
-uint8_t retExpType = 0;
-uint8_t retExpConstValue = 0;
-char    retIdent[50] = {0};
+/* --- Constants */
+
+/* --- Expressions */
+uint8_t retExpType        = 0;
+uint8_t retExpConstValue  = 0;
+char    retIdent[50]      = {0};
 
 /* --- Declarations */
 /* ======= OUTPUT */
@@ -53,20 +55,20 @@ void initCodeGen()
   _asm(oheaders, "include 'c8.asm'");
 
   utarray_new(oglobals, &ut_str_icd);
-  line = "";                    utarray_push_back(oglobals, &line);
-  line = "global:";             utarray_push_back(oglobals, &line); 
+  _asm(oglobals, "");
+  _asm(oglobals, "global:");
  
   utarray_new(ostart,   &ut_str_icd);
-  line = "";                    utarray_push_back(ostart, &line);
-  line = "start:";              utarray_push_back(ostart, &line); 
+  _asm(ostart, "");
+  _asm(ostart, "start:");
 
   utarray_new(ofunc,    &ut_str_icd);
-  line = "";                    utarray_push_back(ofunc, &line);
-  line = "userfunc:";               utarray_push_back(ofunc, &line); 
+  _asm(ofunc, "");
+  _asm(ofunc, "userfunc:");
   
   utarray_new(omemstack,&ut_str_icd);
-  line = "";                    utarray_push_back(omemstack, &line);
-  line = "memstk:";             utarray_push_back(omemstack, &line); 
+  _asm(omemstack, "");
+  _asm(omemstack, "memstk:");
 }
 
 
@@ -75,8 +77,35 @@ void visitProgram(Program _p_)
   switch(_p_->kind)
   {
   case is_Prog:
-    /* Code for Prog Goes Here */
     visitListLine(_p_->u.prog_.listline_);
+
+    char **p = 0;
+    while ( (p=(char**)utarray_next(oheaders,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(oglobals,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(ostart,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(ofunc,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(omemstack,p))) {
+      printf("%s\n",*p);
+    }
+
+    utarray_free(oheaders);
+    utarray_free(oglobals);
+    utarray_free(ostart);
+    utarray_free(ofunc);
+    utarray_free(omemstack);
+
     break;
   default:
     fprintf(stderr, "Error: bad kind field when printing Program!\n");
@@ -465,7 +494,7 @@ void visitConst(Const _p_)
     visitChar(_p_->u.cchr_.char_);
     break;  case is_CArr:
     /* Code for CArr Goes Here */
-    visitListConst(_p_->u.carr_.listconst_);
+    visitListExp(_p_->u.carr_.listexp_);
     break;
   default:
     fprintf(stderr, "Error: bad kind field when printing Const!\n");
@@ -473,13 +502,13 @@ void visitConst(Const _p_)
   }
 }
 
-void visitListConst(ListConst listconst)
+void visitListExp(ListExp listexp)
 {
-  while(listconst != 0)
+  while(listexp != 0)
   {
-    /* Code For ListConst Goes Here */
-    visitConst(listconst->const_);
-    listconst = listconst->listconst_;
+    /* Code For ListExp Goes Here */
+    visitExp(listexp->exp_);
+    listexp = listexp->listexp_;
   }
 }
 

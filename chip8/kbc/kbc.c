@@ -31,6 +31,7 @@ int main(int argc, char ** argv)
     printf("%s\n\n", printProgram(parse_tree)); */
     printf("; Chip8 Assembly\n");
     initCodeGen();
+    printf("; End Chip8 Assembly\n");
     visitProgram(parse_tree);
     return 0;
   }
