@@ -23,6 +23,7 @@ Currently there is only one type: `byte`
 ## Comment
 
 Line comment `//`
+
 Block comment `/*` `*/`
 
 ## Declare variables
