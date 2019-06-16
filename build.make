@@ -1,5 +1,4 @@
 
-
 all: chip8
 
 chip8: grammars
@@ -13,7 +12,7 @@ chip8: grammars
 	./kbc chip8/tests/simple.bas
 
 java: grammars
-	echo "java in not implemeted yet"
+	echo "Java in not implemeted yet"
 
 cpp: grammars
 	make -C cpp

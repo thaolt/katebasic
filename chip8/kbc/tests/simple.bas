@@ -7,3 +7,8 @@ c = 5 + 6
 a = 3 + 6
 
 draw(0,0,5,c)
+
+func testfn()
+	let a = 1
+return
+

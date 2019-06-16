@@ -1,55 +1,61 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> 
+#include <stdint.h> 
+#include <stdarg.h>
 
 #include "codegen.h"
+
+#define ERETCONST 0
+#define ERETVAR   1
+#define ERETREG   2
+
 #include "uthash.h"
 #include "utarray.h"
 
-#define HEADER  0
-#define GLOBAL  1
-#define START   2
-#define FUNC    3
-#define MEMSTK  4
+/* ======= RETURNS */
+/* --- Expression */
+uint8_t retExpType = 0;
+uint8_t retExpConstValue = 0;
+char    retIdent[50] = {0};
 
-
-struct globals { /* global variables */
-    char ident[50];
-    char value;
-    UT_hash_handle hh; /* makes this structure hashable */
-};
-
-struct globals *globals = NULL;
-
-
+/* --- Declarations */
+/* ======= OUTPUT */
 UT_array *oheaders;
 UT_array *oglobals;
 UT_array *ostart;
 UT_array *ofunc;
 UT_array *omemstack;
 
-char cnumRet = 0;
-char is_global_decl = 0;
-char expRetType = 0;
-char expRetValue = 0;
-char idRetValue[50] = {0};
-char is_exp_const = 0;
+/* ======= SCOPES */
 
-/* scopes */
+
+
+/* ======= UTILITIES */
+static void _asm(UT_array *section, const char *fmt, ...) {
+  char *line = (char*) calloc(100, sizeof(char));
+  va_list args;
+  va_start(args, fmt);
+  snprintf(line, 100, fmt, args);
+  utarray_push_back(section, &line);
+  va_end(args);
+  free(line);
+}
 
 void initCodeGen()
 {
   char* line = NULL;
   utarray_new(oheaders, &ut_str_icd);
-  line = "include 'c8.asm'";    utarray_push_back(oheaders, &line);
-  line = "org 0x200";           utarray_push_back(oheaders, &line); 
-  line = "";                    utarray_push_back(oheaders, &line);
-  line = "jmp start";           utarray_push_back(oheaders, &line);
+  _asm(oheaders, "include 'c8.asm'");
+  _asm(oheaders, "org 0x200");
+  _asm(oheaders, "");
+  _asm(oheaders, "jmp start");
+  _asm(oheaders, "include 'c8.asm'");
 
   utarray_new(oglobals, &ut_str_icd);
   line = "";                    utarray_push_back(oglobals, &line);
   line = "global:";             utarray_push_back(oglobals, &line); 
-
+ 
   utarray_new(ostart,   &ut_str_icd);
   line = "";                    utarray_push_back(ostart, &line);
   line = "start:";              utarray_push_back(ostart, &line); 
@@ -66,75 +72,67 @@ void initCodeGen()
 
 void visitProgram(Program _p_)
 {
-  char* line = 0;
   switch(_p_->kind)
   {
   case is_Prog:
-    visitListStmt(_p_->u.prog_.liststmt_);
-
-    char **p = 0;
-    while ( (p=(char**)utarray_next(oheaders,p))) {
-      printf("%s\n",*p);
-    }
-
-    while ( (p=(char**)utarray_next(oglobals,p))) {
-      printf("%s\n",*p);
-    }
-
-    while ( (p=(char**)utarray_next(ostart,p))) {
-      printf("%s\n",*p);
-    }
-
-    while ( (p=(char**)utarray_next(ofunc,p))) {
-      printf("%s\n",*p);
-    }
-
-    while ( (p=(char**)utarray_next(omemstack,p))) {
-      printf("%s\n",*p);
-    }
-
-    utarray_free(oheaders);
-    utarray_free(oglobals);
-    utarray_free(ostart);
-    utarray_free(ofunc);
-    utarray_free(omemstack);
+    /* Code for Prog Goes Here */
+    visitListLine(_p_->u.prog_.listline_);
     break;
-
   default:
     fprintf(stderr, "Error: bad kind field when printing Program!\n");
     exit(1);
   }
 }
 
-void visitStmt(Stmt _p_)
+void visitLine(Line _p_)
 {
-  char *line = malloc(100);
   switch(_p_->kind)
   {
-    case is_SEval:
+  case is_PLDecl:
+    /* Code for PLDecl Goes Here */
+    visitPDecl(_p_->u.pldecl_.pdecl_);
+    break;  case is_PStmt:
+    /* Code for PStmt Goes Here */
+    visitStmt(_p_->u.pstmt_.stmt_);
+    break;
+  default:
+    fprintf(stderr, "Error: bad kind field when printing Line!\n");
+    exit(1);
+  }
+}
+
+void visitListLine(ListLine listline)
+{
+  while(listline != 0)
+  {
+    /* Code For ListLine Goes Here */
+    visitLine(listline->line_);
+    listline = listline->listline_;
+  }
+}
+
+void visitStmt(Stmt _p_)
+{
+  switch(_p_->kind)
+  {
+  case is_SEval:
     /* Code for SEval Goes Here */
     visitExp(_p_->u.seval_.exp_);
     break;  case is_SAsgArr:
     /* Code for SAsgArr Goes Here */
     visitId(_p_->u.sasgarr_.id_);
-    visitNumber(_p_->u.sasgarr_.number_);
-    break;  
-    case is_SAsgVar:
-      visitId(_p_->u.sasgvar_.id_);
-    break;
-    case is_SAsg:
-      visitStmt(_p_->u.sasg_.stmt_);
-      visitExp(_p_->u.sasg_.exp_);
-      snprintf(line, 100, "\tmov\tI,\tglobal.%s", idRetValue);
-      utarray_push_back(ostart, &line);
-      snprintf(line, 100, "\tregd\tv0");
-      utarray_push_back(ostart, &line);
-    break;
-    case is_SDecl:
+    visitExp(_p_->u.sasgarr_.exp_);
+    break;  case is_SAsgVar:
+    /* Code for SAsgVar Goes Here */
+    visitId(_p_->u.sasgvar_.id_);
+    break;  case is_SAsg:
+    /* Code for SAsg Goes Here */
+    visitStmt(_p_->u.sasg_.stmt_);
+    visitExp(_p_->u.sasg_.exp_);
+    break;  case is_SDecl:
     /* Code for SDecl Goes Here */
     visitDecl(_p_->u.sdecl_.decl_);
-    break;
-    case is_SBran:
+    break;  case is_SBran:
     /* Code for SBran Goes Here */
     visitBranch(_p_->u.sbran_.branch_);
     break;  case is_SLoop:
@@ -158,7 +156,6 @@ void visitStmt(Stmt _p_)
     fprintf(stderr, "Error: bad kind field when printing Stmt!\n");
     exit(1);
   }
-  free(line);
 }
 
 void visitListStmt(ListStmt liststmt)
@@ -195,39 +192,58 @@ void visitListParam(ListParam listparam)
   }
 }
 
+void visitPDecl(PDecl _p_)
+{
+  switch(_p_->kind)
+  {
+  case is_DFnRt:
+    /* Code for DFnRt Goes Here */
+    visitExp(_p_->u.dfnrt_.exp_);
+    break;  case is_DFnNR:
+    /* Code for DFnNR Goes Here */
+    break;  case is_DGlbl:
+    /* Code for DGlbl Goes Here */
+    visitDecl(_p_->u.dglbl_.decl_);
+    break;  case is_DSub:
+    /* Code for DSub Goes Here */
+    visitId(_p_->u.dsub_.id_);
+    visitListStmt(_p_->u.dsub_.liststmt_);
+    break;  case is_DFunc:
+    /* Code for DFunc Goes Here */
+    visitId(_p_->u.dfunc_.id_);
+    visitListArg(_p_->u.dfunc_.listarg_);
+    visitListStmt(_p_->u.dfunc_.liststmt_);
+    visitPDecl(_p_->u.dfunc_.pdecl_);
+    break;  case is_DStruct:
+    /* Code for DStruct Goes Here */
+    visitId(_p_->u.dstruct_.id_);
+    visitListDecl(_p_->u.dstruct_.listdecl_);
+    break;
+  default:
+    fprintf(stderr, "Error: bad kind field when printing PDecl!\n");
+    exit(1);
+  }
+}
 
-
+void visitListPDecl(ListPDecl listpdecl)
+{
+  while(listpdecl != 0)
+  {
+    /* Code For ListPDecl Goes Here */
+    visitPDecl(listpdecl->pdecl_);
+    listpdecl = listpdecl->listpdecl_;
+  }
+}
 
 void visitDecl(Decl _p_)
 {
-  char *line = malloc(100);
-
   switch(_p_->kind)
   {
-    case is_DLetA:
-      visitId(_p_->u.dleta_.id_);
-      if (is_global_decl) {
-        
-        memset(line, 0, 100);
-        strcat(line, "\t.");
-        strcat(line, idRetValue);
-
-        visitExp(_p_->u.dleta_.exp_);
-        strcat(line, "\tdb\t");
-
-        if (is_exp_const) {
-          char num[50] = {0};
-          snprintf(num, 50,"%d",cnumRet);
-          strcat(line, num);
-        } else
-          strcat(line, "0");
-
-        utarray_push_back(oglobals, &line); 
-      } else {
-        visitExp(_p_->u.dleta_.exp_);
-      }
-    break;  
-    case is_DLetTA:
+  case is_DLetA:
+    /* Code for DLetA Goes Here */
+    visitId(_p_->u.dleta_.id_);
+    visitExp(_p_->u.dleta_.exp_);
+    break;  case is_DLetTA:
     /* Code for DLetTA Goes Here */
     visitId(_p_->u.dletta_.id_);
     visitType(_p_->u.dletta_.type_);
@@ -236,47 +252,12 @@ void visitDecl(Decl _p_)
     /* Code for DLetT Goes Here */
     visitId(_p_->u.dlett_.id_);
     visitType(_p_->u.dlett_.type_);
-    break;  
-    case is_DLetB:
-      visitId(_p_->u.dletb_.id_);
-      if (is_global_decl) {
-        memset(line, 0, 100);
-        strcat(line, "\t.");
-        strcat(line, idRetValue);
-        strcat(line, "\tdb\t0");
-        utarray_push_back(oglobals, &line); 
-      } else {
-      }
-    break;
-
-    case is_DGlbl:
-    is_global_decl = 1;
-    visitDecl(_p_->u.dglbl_.decl_);
-    is_global_decl = 0;
-    break;  
-    case is_DLet:
+    break;  case is_DLetB:
+    /* Code for DLetB Goes Here */
+    visitId(_p_->u.dletb_.id_);
+    break;  case is_DLet:
     /* Code for DLet Goes Here */
     visitDecl(_p_->u.dlet_.decl_);
-    break;
-    case is_DSub:
-    /* Code for DSub Goes Here */
-    visitId(_p_->u.dsub_.id_);
-    visitListStmt(_p_->u.dsub_.liststmt_);
-    break;  case is_DFnRt:
-    /* Code for DFnRt Goes Here */
-    visitExp(_p_->u.dfnrt_.exp_);
-    break;  case is_DFnNR:
-    /* Code for DFnNR Goes Here */
-    break;  case is_DFunc:
-    /* Code for DFunc Goes Here */
-    visitId(_p_->u.dfunc_.id_);
-    visitListArg(_p_->u.dfunc_.listarg_);
-    visitListStmt(_p_->u.dfunc_.liststmt_);
-    visitDecl(_p_->u.dfunc_.decl_);
-    break;  case is_DStruct:
-    /* Code for DStruct Goes Here */
-    visitId(_p_->u.dstruct_.id_);
-    visitListDecl(_p_->u.dstruct_.listdecl_);
     break;  case is_DLbl:
     /* Code for DLbl Goes Here */
     visitLlabel(_p_->u.dlbl_.llabel_);
@@ -381,8 +362,6 @@ void visitBranch(Branch _p_)
 
 void visitExp(Exp _p_)
 {
-  char *line = malloc(100);
-  memset(line, 0, 100);
   switch(_p_->kind)
   {
   case is_ELgOr:
@@ -437,29 +416,11 @@ void visitExp(Exp _p_)
     /* Code for EBitShr Goes Here */
     visitExp(_p_->u.ebitshr_.exp_1);
     visitExp(_p_->u.ebitshr_.exp_2);
-    break;  
-    case is_EAdd: {
-      /* Code for EAdd Goes Here */
-      visitExp(_p_->u.eadd_.exp_1);
-      char exp1_const = is_exp_const;
-      char cnum1 = cnumRet;
-      visitExp(_p_->u.eadd_.exp_2);
-      char exp2_const = is_exp_const;
-      char cnum2 = cnumRet;
-      if (exp1_const && exp2_const) {
-        cnumRet = cnum1 + cnum2;
-        if (!is_global_decl) {
-          snprintf(line, 100,"\tmov\tv0,\t%d",cnumRet);
-          utarray_push_back(ostart, &line);
-        } else {
-          snprintf(line, 100,"\tmov\tv0,\t%d",cnumRet);
-          utarray_push_back(ostart, &line);
-        }
-      } else {
-        is_exp_const = 0;
-      }
-    } break;  
-    case is_ESub:
+    break;  case is_EAdd:
+    /* Code for EAdd Goes Here */
+    visitExp(_p_->u.eadd_.exp_1);
+    visitExp(_p_->u.eadd_.exp_2);
+    break;  case is_ESub:
     /* Code for ESub Goes Here */
     visitExp(_p_->u.esub_.exp_1);
     visitExp(_p_->u.esub_.exp_2);
@@ -478,11 +439,9 @@ void visitExp(Exp _p_)
     break;  case is_EConst:
     /* Code for EConst Goes Here */
     visitConst(_p_->u.econst_.const_);
-    is_exp_const = 1;
     break;  case is_EVar:
     /* Code for EVar Goes Here */
     visitId(_p_->u.evar_.id_);
-    is_exp_const = 0;
     break;  case is_EArrV:
     /* Code for EArrV Goes Here */
     visitId(_p_->u.earrv_.id_);
@@ -569,11 +528,9 @@ void visitType(Type _p_)
   }
 }
 
-
-
 void visitId(Id p)
 {
-  strncpy(idRetValue, p, 50);
+  /* Code for Id Goes Here */
 }
 void visitLlabel(Llabel p)
 {
@@ -589,7 +546,7 @@ void visitNumhex(Numhex p)
 }
 void visitNumdec(Numdec p)
 {
-  cnumRet = atoi(p);
+  /* Code for Numdec Goes Here */
 }
 void visitIdent(Ident i)
 {
