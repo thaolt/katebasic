@@ -29,6 +29,13 @@ UT_array *ofunc;
 UT_array *omemstack;
 
 char cnumRet = 0;
+char is_global_decl = 0;
+char expRetType = 0;
+char expRetValue = 0;
+char idRetValue[50] = {0};
+char is_exp_const = 0;
+
+/* scopes */
 
 void initCodeGen()
 {
@@ -49,7 +56,7 @@ void initCodeGen()
 
   utarray_new(ofunc,    &ut_str_icd);
   line = "";                    utarray_push_back(ofunc, &line);
-  line = "func:";               utarray_push_back(ofunc, &line); 
+  line = "userfunc:";               utarray_push_back(ofunc, &line); 
   
   utarray_new(omemstack,&ut_str_icd);
   line = "";                    utarray_push_back(omemstack, &line);
@@ -101,26 +108,33 @@ void visitProgram(Program _p_)
 
 void visitStmt(Stmt _p_)
 {
+  char *line = malloc(100);
   switch(_p_->kind)
   {
-  case is_SEval:
+    case is_SEval:
     /* Code for SEval Goes Here */
     visitExp(_p_->u.seval_.exp_);
     break;  case is_SAsgArr:
     /* Code for SAsgArr Goes Here */
     visitId(_p_->u.sasgarr_.id_);
     visitNumber(_p_->u.sasgarr_.number_);
-    break;  case is_SAsgVar:
-    /* Code for SAsgVar Goes Here */
-    visitId(_p_->u.sasgvar_.id_);
-    break;  case is_SAsg:
-    /* Code for SAsg Goes Here */
-    visitStmt(_p_->u.sasg_.stmt_);
-    visitExp(_p_->u.sasg_.exp_);
-    break;  case is_SDecl:
+    break;  
+    case is_SAsgVar:
+      visitId(_p_->u.sasgvar_.id_);
+    break;
+    case is_SAsg:
+      visitStmt(_p_->u.sasg_.stmt_);
+      visitExp(_p_->u.sasg_.exp_);
+      snprintf(line, 100, "\tmov\tI,\tglobal.%s", idRetValue);
+      utarray_push_back(ostart, &line);
+      snprintf(line, 100, "\tregd\tv0");
+      utarray_push_back(ostart, &line);
+    break;
+    case is_SDecl:
     /* Code for SDecl Goes Here */
     visitDecl(_p_->u.sdecl_.decl_);
-    break;  case is_SBran:
+    break;
+    case is_SBran:
     /* Code for SBran Goes Here */
     visitBranch(_p_->u.sbran_.branch_);
     break;  case is_SLoop:
@@ -144,6 +158,7 @@ void visitStmt(Stmt _p_)
     fprintf(stderr, "Error: bad kind field when printing Stmt!\n");
     exit(1);
   }
+  free(line);
 }
 
 void visitListStmt(ListStmt liststmt)
@@ -180,11 +195,7 @@ void visitListParam(ListParam listparam)
   }
 }
 
-char is_global_decl = 0;
-char expRetType = 0;
-char expRetValue = 0;
-char idRetValue[50] = {0};
-char is_exp_const = 0;
+
 
 
 void visitDecl(Decl _p_)
@@ -193,29 +204,30 @@ void visitDecl(Decl _p_)
 
   switch(_p_->kind)
   {
-  case is_DLetA:
-    visitId(_p_->u.dleta_.id_);
-    if (is_global_decl) {
-      
-      memset(line, 0, 100);
-      strcat(line, "\t.");
-      strcat(line, idRetValue);
+    case is_DLetA:
+      visitId(_p_->u.dleta_.id_);
+      if (is_global_decl) {
+        
+        memset(line, 0, 100);
+        strcat(line, "\t.");
+        strcat(line, idRetValue);
 
-      visitExp(_p_->u.dleta_.exp_);
-      strcat(line, "\tdb\t");
+        visitExp(_p_->u.dleta_.exp_);
+        strcat(line, "\tdb\t");
 
-      if (is_exp_const) {
-        char num[50] = {0};
-        snprintf(num, 50,"%d",cnumRet);
-        strcat(line, num);
-      } else
-        strcat(line, "0");
+        if (is_exp_const) {
+          char num[50] = {0};
+          snprintf(num, 50,"%d",cnumRet);
+          strcat(line, num);
+        } else
+          strcat(line, "0");
 
-      utarray_push_back(oglobals, &line); 
-    } else {
-      visitExp(_p_->u.dleta_.exp_);
-    }
-    break;  case is_DLetTA:
+        utarray_push_back(oglobals, &line); 
+      } else {
+        visitExp(_p_->u.dleta_.exp_);
+      }
+    break;  
+    case is_DLetTA:
     /* Code for DLetTA Goes Here */
     visitId(_p_->u.dletta_.id_);
     visitType(_p_->u.dletta_.type_);
@@ -224,17 +236,29 @@ void visitDecl(Decl _p_)
     /* Code for DLetT Goes Here */
     visitId(_p_->u.dlett_.id_);
     visitType(_p_->u.dlett_.type_);
-    break;  case is_DLetB:
-    /* Code for DLetB Goes Here */
-    visitId(_p_->u.dletb_.id_);
-    break;  case is_DGlbl:
+    break;  
+    case is_DLetB:
+      visitId(_p_->u.dletb_.id_);
+      if (is_global_decl) {
+        memset(line, 0, 100);
+        strcat(line, "\t.");
+        strcat(line, idRetValue);
+        strcat(line, "\tdb\t0");
+        utarray_push_back(oglobals, &line); 
+      } else {
+      }
+    break;
+
+    case is_DGlbl:
     is_global_decl = 1;
     visitDecl(_p_->u.dglbl_.decl_);
     is_global_decl = 0;
-    break;  case is_DLet:
+    break;  
+    case is_DLet:
     /* Code for DLet Goes Here */
     visitDecl(_p_->u.dlet_.decl_);
-    break;  case is_DSub:
+    break;
+    case is_DSub:
     /* Code for DSub Goes Here */
     visitId(_p_->u.dsub_.id_);
     visitListStmt(_p_->u.dsub_.liststmt_);
@@ -357,6 +381,8 @@ void visitBranch(Branch _p_)
 
 void visitExp(Exp _p_)
 {
+  char *line = malloc(100);
+  memset(line, 0, 100);
   switch(_p_->kind)
   {
   case is_ELgOr:
@@ -422,6 +448,13 @@ void visitExp(Exp _p_)
       char cnum2 = cnumRet;
       if (exp1_const && exp2_const) {
         cnumRet = cnum1 + cnum2;
+        if (!is_global_decl) {
+          snprintf(line, 100,"\tmov\tv0,\t%d",cnumRet);
+          utarray_push_back(ostart, &line);
+        } else {
+          snprintf(line, 100,"\tmov\tv0,\t%d",cnumRet);
+          utarray_push_back(ostart, &line);
+        }
       } else {
         is_exp_const = 0;
       }

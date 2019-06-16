@@ -1,7 +1,10 @@
 global a = 1
 global b = 2
+global c
 
-global c = (a + 1) * 2
+c = 5 + 6
 
-draw(0,0,5,c)
+a = 3 + 6
+
+// draw(0,0,5,c)
 

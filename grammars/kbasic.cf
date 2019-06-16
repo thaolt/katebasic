@@ -37,7 +37,7 @@ DLbl.		Decl	::= Llabel ;
 
 terminator Decl3 "" ;
 terminator Decl4 "" ;
-coercions Decl 4 ;
+coercions Decl 2 ;
 
 -- Function arguments
 FArg.		Arg		::=	Id ; 
