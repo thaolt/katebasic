@@ -7,25 +7,25 @@ org 0x200
 ; c = a + b
 ; draw( 0, 0, c )
 
-jmp	_start
+jmp	start
 
-_global:
+global:
 	.a: db	0x01
 	.b: db	0x02
 	.c: db	0
 
-_start:
+start:
 	; clear screen
 	cls
 	
 	; EAdd (
 	; v1 = a
-	mov I, _global.a
+	mov I, global.a
 	regl v0
 	mov vE, v0
 
 	; v1 = b
-	mov I, _global.b
+	mov I, global.b
 	regl v0
 	mov vD, v0
 
@@ -36,12 +36,12 @@ _start:
 	
 	; EAsg (
 	; c = v0
-	mov I, _global.c
+	mov I, global.c
 	regd v0
 	; ) EAsg
 
 	; draw( 0, 0, c )
-	mov I, _global.c
+	mov I, global.c
 	regl v0
 
 	hex v0
@@ -50,8 +50,8 @@ _start:
 	mov v1, 0
 	drw v0, v1, 5
 
-_halt:
-	jmp	_halt
+halt:
+	jmp	halt
 
-_stack:
+memstk:
 
