@@ -3,7 +3,7 @@
 all: chip8
 
 chip8: grammars
-	cp -f ../chip8/kbc/* ./chip8/
+	cp -rf ../chip8/kbc/* ./chip8/
 	make -C chip8
 	mv chip8/kbc .
 

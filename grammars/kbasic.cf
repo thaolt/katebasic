@@ -33,7 +33,7 @@ DFnRt.		Decl1	::= "return" Exp ;
 DFnNR.		Decl1	::= "return" ;
 DFunc.		Decl	::= "func" Id "(" [Arg] ")" [Stmt] Decl1 ;
 DStruct.	Decl	::= "struct" Id [Decl3] "endstruct";
-DLbl.		Decl	::= LLabel;
+DLbl.		Decl	::= Llabel ;
 
 terminator Decl3 "" ;
 terminator Decl4 "" ;
@@ -91,7 +91,7 @@ coercions Exp 13 ;
 -- Constants
 CNum.		Const1	::= Number ;
 _.			Const 	::= Const1 ;
-CStr.		Const	::= String ;
+-- CStr.		Const	::= String ;
 CChr.		Const	::= Char ;
 CArr.		Const	::= "{" [Const1] "}" ;
 
@@ -99,9 +99,9 @@ separator Const1 "," ;
 coercions Const 1 ;
 
 -- Numbers
-NDec.		Number 	::= NumDec ;
-NBin.		Number 	::= NumBin ;
-NHex.		Number 	::= NumHex ;
+NDec.		Number 	::= Numdec ;
+NBin.		Number 	::= Numbin ;
+NHex.		Number 	::= Numhex ;
 
 
 TByte.		Type1  	::= "byte" ;
@@ -118,11 +118,11 @@ comment "//" ;
 comment "/*" "*/" ;
 
 token Id (letter (letter | digit | '_')*) ;
-token LLabel (letter (letter | digit | '_')+ ':') ;
-token NumBin ('%' ('0'|'1')+ ) ;
-token NumHex ('$' (digit | ["ABCDEF"] | ["abcdef"])+ ) ;
-token NumDec ( (digit)+ ) ;
-token NumFloat ( (digit)+ (('.') (digit)+)? ) ;
+token Llabel (letter (letter | digit | '_')+ ':') ;
+token Numbin ('%' ('0'|'1')+ ) ;
+token Numhex ('$' (digit | ('A'|'B'|'C'|'D'|'E'|'F'|'a'|'b'|'c'|'d'|'e'|'f') )+ ) ;
+token Numdec ( (digit)+ ) ;
+--token NumFloat ( (digit)+ (('.') (digit)+)? ) ;
 
 
 

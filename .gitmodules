@@ -1,0 +1,3 @@
+[submodule "chip8/kbc/uthash"]
+	path = chip8/kbc/uthash
+	url = https://github.com/troydhanson/uthash.git
