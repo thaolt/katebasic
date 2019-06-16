@@ -6,6 +6,7 @@ chip8: grammars
 	cp -rf ../chip8/kbc/* ./chip8/
 	make -C chip8
 	mv chip8/kbc .
+	./kbc chip8/tests/simple.bas
 
 java: grammars
 	echo "java in not implemeted yet"

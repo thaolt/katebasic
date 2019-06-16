@@ -1,17 +1,77 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h> 
 
 #include "codegen.h"
+#include "uthash.h"
+#include "utarray.h"
+
+#define HEADER  0
+#define GLOBAL  1
+#define START   2
+#define FUNC    3
+#define MEMSTK  4
+
+
+struct globals { /* global variables */
+    char ident[50];
+    char value;
+    UT_hash_handle hh; /* makes this structure hashable */
+};
+
+struct globals *globals = NULL;
+
+
+UT_array *oheaders;
+UT_array *oglobals;
+UT_array *ostart;
+UT_array *ofunc;
+UT_array *omemstack;
+
+void initCodeGen()
+{
+  char* line = NULL;
+  utarray_new(oheaders, &ut_str_icd);
+
+  utarray_new(oglobals, &ut_str_icd);
+  line = "global:";             utarray_push_back(oglobals, &line); 
+
+  utarray_new(ostart,   &ut_str_icd);
+  line = "start:";              utarray_push_back(ostart, &line); 
+
+  utarray_new(ofunc,    &ut_str_icd);
+  line = "func:";               utarray_push_back(ofunc, &line); 
+  
+  utarray_new(omemstack,&ut_str_icd);
+  line = "memstk:";             utarray_push_back(omemstack, &line); 
+}
 
 
 void visitProgram(Program _p_)
 {
+  char* line = NULL;
   switch(_p_->kind)
   {
   case is_Prog:
-    /* Code for Prog Goes Here */
+    line = "include 'c8.asm'";  utarray_push_back(oheaders, &line);
+    line = "org 0x200";         utarray_push_back(oheaders, &line); 
+    line = "";                  utarray_push_back(oheaders, &line);
+    line = "jmp start";         utarray_push_back(oheaders, &line);
+
     visitListStmt(_p_->u.prog_.liststmt_);
+
+    char **p = NULL;
+    while ( (p=(char**)utarray_next(oheaders,p))) {
+      printf("%s\n",*p);
+    }
+
+    utarray_free(oheaders);
+    utarray_free(oglobals);
+    utarray_free(ostart);
+    utarray_free(ofunc);
+    utarray_free(omemstack);
     break;
+
   default:
     fprintf(stderr, "Error: bad kind field when printing Program!\n");
     exit(1);
@@ -99,12 +159,19 @@ void visitListParam(ListParam listparam)
   }
 }
 
+char is_global_decl = 0;
+char expRetType = 0;
+char expRetValue = 0;
+char idRetValue[50] = {0};
+
+
 void visitDecl(Decl _p_)
 {
+  char *line = NULL;
   switch(_p_->kind)
   {
   case is_DLetA:
-    /* Code for DLetA Goes Here */
+    line
     visitId(_p_->u.dleta_.id_);
     visitExp(_p_->u.dleta_.exp_);
     break;  case is_DLetTA:
@@ -120,8 +187,9 @@ void visitDecl(Decl _p_)
     /* Code for DLetB Goes Here */
     visitId(_p_->u.dletb_.id_);
     break;  case is_DGlbl:
-    /* Code for DGlbl Goes Here */
+    is_global_decl = 1;
     visitDecl(_p_->u.dglbl_.decl_);
+    is_global_decl = 0;
     break;  case is_DLet:
     /* Code for DLet Goes Here */
     visitDecl(_p_->u.dlet_.decl_);
@@ -416,7 +484,7 @@ void visitType(Type _p_)
 
 void visitId(Id p)
 {
-  /* Code for Id Goes Here */
+  strncpy(idRetValue, p, 50);
 }
 void visitLlabel(Llabel p)
 {

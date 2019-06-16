@@ -4,6 +4,7 @@
 #include "Parser.h"
 #include "Printer.h"
 #include "Absyn.h"
+#include "codegen.h"
 
 int main(int argc, char ** argv)
 {
@@ -28,6 +29,9 @@ int main(int argc, char ** argv)
     printf("%s\n\n", showProgram(parse_tree));
     printf("[Linearized Tree]\n");
     printf("%s\n\n", printProgram(parse_tree));
+    printf("[Assembly]\n");
+    initCodeGen();
+    visitProgram(parse_tree);
     return 0;
   }
   return 1;

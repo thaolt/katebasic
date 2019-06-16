@@ -3,6 +3,7 @@
 
 #include "Absyn.h"
 
+void initCodeGen();
 void visitProgram(Program p);
 void visitStmt(Stmt p);
 void visitListStmt(ListStmt p);
