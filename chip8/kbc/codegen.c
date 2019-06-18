@@ -185,6 +185,10 @@ void visitProgram(Program _p_)
     _asm(omain, "");
     _asm(omain, "halt:");
     _asm(omain, "\tjmp\thalt");
+
+    _asm(oglobals, "");
+    _asm(oglobals, "\tdb\t($ mod 2)\tdup 0");
+
     char **p = 0;
     while ( (p=(char**)utarray_next(oheaders,p))) {
       printf("%s\n",*p);
@@ -346,8 +350,6 @@ void visitListParam(ListParam listparam)
     listparam = listparam->listparam_;
   }
 }
-
-
 
 void visitPDecl(PDecl _p_)
 {
