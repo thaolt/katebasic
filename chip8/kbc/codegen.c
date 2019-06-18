@@ -19,6 +19,8 @@
 #include "utarray.h"
 
 /* ======= RETURNS */
+/* --- Global */
+uint8_t isGlobalDeclare   = 0;
 /* --- Ids */
 char    retId[50]         = {0};
 /* --- Numbers */
@@ -76,7 +78,7 @@ void initCodeGen()
   _asm(oheaders, "org 0x200");
   _asm(oheaders, "");
   _asm(oheaders, "jmp start");
-  _asm(oheaders, "include 'c8.asm'");
+  _asm(oheaders, "");
 
   utarray_new(oglobals, &ut_str_icd);
   _asm(oglobals, "");
@@ -104,6 +106,8 @@ void declareGlobal(Decl _p_) {
   char varName[50] = {0};
 
   /* TODO: check for duplication name */
+
+  isGlobalDeclare = 1;
 
   Type varType = make_TByte();
   uint8_t valueExpType = ERETCONST;
@@ -152,6 +156,7 @@ void declareGlobal(Decl _p_) {
   }
 
   _asm(oglobals, "\t.%s\tdb\t%d", varName, value);
+  isGlobalDeclare = 0;
 }
 
 void loadVariable(Exp e) {
@@ -253,7 +258,6 @@ void visitStmt(Stmt _p_)
         _asm(cscope, "\tmov\tv0,\t%d", retNum);
       else;
 
-      _asm(cscope, "\t; SAssign");
       _asm(cscope, "\tmov\tI,\tglobal.%s", retId);
       _asm(cscope, "\tregd\tv0");
     break;
@@ -569,7 +573,6 @@ void visitExp(Exp _p_)
       visitExp(_p_->u.ebitshr_.exp_2);
     break;
     case is_EAdd: {
-      _asm(cscope, "\t; EAdd");
       visitExp(_p_->u.eadd_.exp_1);
       bool exp1Const = retExpType == ERETCONST;
       uint8_t exp1 = retExpConst;
@@ -577,10 +580,12 @@ void visitExp(Exp _p_)
       visitExp(_p_->u.eadd_.exp_2);
       bool exp2Const = retExpType == ERETCONST;
       uint8_t exp2 = retExpConst;
-      
-      if (retExpType)
-        _asm(cscope, "\tmov\tv0,\t%d", exp1 + exp2);
-      else {
+
+      if (exp1Const && exp2Const) {
+        retExpConst = exp1 + exp2;
+        if (!isGlobalDeclare)
+          _asm(cscope, "\tmov\tv0,\t%d", retExpConst);
+      } else {
         if (exp2Const)
           _asm(cscope, "\tmov\tv1,\t%d", exp2);
         else {
@@ -597,9 +602,8 @@ void visitExp(Exp _p_)
         }
 
         _asm(cscope, "\tadd\tv0,\tv1");
-        retExpType = exp1Const && exp2Const?ERETCONST:ERETREG;
       }
-
+      retExpType = exp1Const && exp2Const?ERETCONST:ERETREG;
     } break;
     case is_ESub: {
       /* Code for ESub Goes Here */

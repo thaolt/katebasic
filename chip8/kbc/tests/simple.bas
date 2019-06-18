@@ -1,9 +1,5 @@
-global a
-global b
-global c
+global a = 1 + 1
+global b = 5 + 5
+global c = 3
 
-a = 1
-
-b = 2
-
-c = a + 5
+c = 2 + a + 5
