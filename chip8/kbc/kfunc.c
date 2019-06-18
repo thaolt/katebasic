@@ -8,11 +8,15 @@ uint8_t kfuncUseMultiply = 0;
 void kfuncMultiply() {
 	if (!kfuncUseMultiply) {
 		_asm(okfunc, "\t.multiply:");
-		_asm(okfunc, "\t\tmov\tv3,\tv1");
-		_asm(okfunc, "\t\tse\tv3,\t0");
+		_asm(okfunc, "\t\tmov\tv3,\t1");
+		_asm(okfunc, "\t\tmov\tv2,\tv1");
+		_asm(okfunc, "\t\tmov\tv1,\tv0");
+		_asm(okfunc, "\t\tmov\tv0,\t0");
+		_asm(okfunc, "\t\tsne\tv2,\t0");
+		_asm(okfunc, "\t\tjmp\t$ + 8");
 		_asm(okfunc, "\t\tadd\tv0,\tv1");
-		_asm(okfunc, "\t\tjmp\t$+2");
-		_asm(okfunc, "\t\tjmp\t.multiply");
+		_asm(okfunc, "\t\tsub\tv2,\tv3");
+		_asm(okfunc, "\t\tjmp\t$ - 8");
 		_asm(okfunc, "\tret");
 	}
 	_asm(cscope, "\tcall\tkfunc.multiply");

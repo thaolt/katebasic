@@ -99,9 +99,6 @@ void initCodeGen()
 
   utarray_new(ouserfunc,    &ut_str_icd);
   _asm(ouserfunc, "");
-  _asm(ouserfunc, "halt:");
-  _asm(ouserfunc, "\tjmp\thalt");
-  _asm(ouserfunc, "");
   _asm(ouserfunc, "userfunc:");
 
   utarray_new(okfunc,    &ut_str_icd);
@@ -185,6 +182,9 @@ void visitProgram(Program _p_)
   case is_Prog:
     visitListLine(_p_->u.prog_.listline_);
 
+    _asm(omain, "");
+    _asm(omain, "halt:");
+    _asm(omain, "\tjmp\thalt");
     char **p = 0;
     while ( (p=(char**)utarray_next(oheaders,p))) {
       printf("%s\n",*p);
@@ -620,7 +620,7 @@ void visitExp(Exp _p_)
 
         _asm(cscope, "\tadd\tv0,\tv1");
       }
-      retExpType = exp1Const && exp2Const?ERETCONST:ERETREG;
+      retExpType = exp1Const && exp2Const ? ERETCONST : ERETREG;
     } break;
     case is_ESub: {
       /* Code for ESub Goes Here */
@@ -632,11 +632,40 @@ void visitExp(Exp _p_)
       visitExp(_p_->u.ediv_.exp_1);
       visitExp(_p_->u.ediv_.exp_2);
     break;
-    case is_EMul:
+    case is_EMul: {
       visitExp(_p_->u.emul_.exp_1);
+      bool exp1Const = retExpType == ERETCONST;
+      uint8_t exp1 = retExpConst;
+
       visitExp(_p_->u.emul_.exp_2);
-      kfuncMultiply();
-    break;
+      bool exp2Const = retExpType == ERETCONST;
+      uint8_t exp2 = retExpConst;
+
+      if (exp1Const && exp2Const) {
+        retExpConst = exp1 * exp2;
+        if (!isGlobalDeclare)
+          _asm(cscope, "\tmov\tv0,\t%d", retExpConst);
+      } else {
+        if (exp2Const)
+          _asm(cscope, "\tmov\tv1,\t%d", exp2);
+        else {
+          /* load exp2 to v0 */
+          loadVariable(_p_->u.eadd_.exp_2);
+          _asm(cscope, "\tmov\tv1,\tv0");
+        }
+
+        if (exp1Const)
+          _asm(cscope, "\tmov\tv0,\t%d", exp1);
+        else {
+          /* load exp1 to v0 */
+          loadVariable(_p_->u.eadd_.exp_1);
+        }
+
+        kfuncMultiply();
+      }
+      retExpType = exp1Const && exp2Const ? ERETCONST : ERETREG;
+
+    } break;
     case is_EMod:
       /* Code for EMod Goes Here */
       visitExp(_p_->u.emod_.exp_1);

@@ -1,9 +1,10 @@
-global a = 1 + 1
-global b = 5 + 5
-global c = 3
-global d
+global a = 1
+global b
 
-c = 2 + a + 5
+a = a + 1
+a = 0 * a
 
-d = 5 * 9
-
+_ "hex v0"
+_ "mov v1, 0"
+_ "mov v2, 0"
+_ "drw v1, v2, 5"
