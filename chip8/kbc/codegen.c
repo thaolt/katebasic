@@ -3,6 +3,7 @@
 #include <string.h> 
 #include <stdint.h> 
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include "codegen.h"
 
@@ -33,13 +34,21 @@ char    retExpId[50]      = {0};
 /* ======= OUTPUT */
 UT_array *oheaders;
 UT_array *oglobals;
-UT_array *ostart;
+UT_array *omain;
 UT_array *ofunc;
 UT_array *omemstack;
 /* ======= LOOKUP TABLES */
 
 /* ======= SCOPES */
 
+struct scope {
+    char id[50];                    /* key */
+    UT_array *oasm;
+    UT_hash_handle hh;         /* makes this structure hashable */
+};
+
+struct scope *scopes = NULL;    /* important! initialize to NULL */
+struct scope *cscope = NULL;
 
 
 /* ======= UTILITIES */
@@ -57,9 +66,11 @@ static void _asm(UT_array *section, const char *fmt, ...) {
   free(line);
 }
 
+/* ======= INITIALIZATION */
 void initCodeGen()
 {
   char* line = NULL;
+  
   utarray_new(oheaders, &ut_str_icd);
   _asm(oheaders, "include 'c8.asm'");
   _asm(oheaders, "org 0x200");
@@ -70,10 +81,15 @@ void initCodeGen()
   utarray_new(oglobals, &ut_str_icd);
   _asm(oglobals, "");
   _asm(oglobals, "global:");
- 
-  utarray_new(ostart,   &ut_str_icd);
-  _asm(ostart, "");
-  _asm(ostart, "start:");
+
+  struct scope *main = malloc(sizeof(struct scope));
+  strcpy(main->id, "main");
+  utarray_new(omain,   &ut_str_icd);
+  _asm(omain, "");
+  _asm(omain, "start:");
+  main->oasm = omain;
+  HASH_ADD_STR( scopes, id, main );  /* id: name of key field */
+  cscope = omain;
 
   utarray_new(ofunc,    &ut_str_icd);
   _asm(ofunc, "");
@@ -83,157 +99,7 @@ void initCodeGen()
   _asm(omemstack, "");
   _asm(omemstack, "memstk:");
 }
-
-
-void visitProgram(Program _p_)
-{
-  switch(_p_->kind)
-  {
-  case is_Prog:
-    visitListLine(_p_->u.prog_.listline_);
-
-    char **p = 0;
-    while ( (p=(char**)utarray_next(oheaders,p))) {
-      printf("%s\n",*p);
-    }
-
-    while ( (p=(char**)utarray_next(oglobals,p))) {
-      printf("%s\n",*p);
-    }
-
-    while ( (p=(char**)utarray_next(ostart,p))) {
-      printf("%s\n",*p);
-    }
-
-    while ( (p=(char**)utarray_next(ofunc,p))) {
-      printf("%s\n",*p);
-    }
-
-    while ( (p=(char**)utarray_next(omemstack,p))) {
-      printf("%s\n",*p);
-    }
-
-    utarray_free(oheaders);
-    utarray_free(oglobals);
-    utarray_free(ostart);
-    utarray_free(ofunc);
-    utarray_free(omemstack);
-
-    break;
-  default:
-    fprintf(stderr, "Error: bad kind field when printing Program!\n");
-    exit(1);
-  }
-}
-
-void visitLine(Line _p_)
-{
-  switch(_p_->kind)
-  {
-  case is_PLDecl:
-    /* Code for PLDecl Goes Here */
-    visitPDecl(_p_->u.pldecl_.pdecl_);
-    break;  case is_PStmt:
-    /* Code for PStmt Goes Here */
-    visitStmt(_p_->u.pstmt_.stmt_);
-    break;
-  default:
-    fprintf(stderr, "Error: bad kind field when printing Line!\n");
-    exit(1);
-  }
-}
-
-void visitListLine(ListLine listline)
-{
-  while(listline != 0)
-  {
-    /* Code For ListLine Goes Here */
-    visitLine(listline->line_);
-    listline = listline->listline_;
-  }
-}
-
-void visitStmt(Stmt _p_)
-{
-  switch(_p_->kind)
-  {
-  case is_SEval:
-    /* Code for SEval Goes Here */
-    visitExp(_p_->u.seval_.exp_);
-    break;  case is_SAsgArr:
-    /* Code for SAsgArr Goes Here */
-    visitId(_p_->u.sasgarr_.id_);
-    visitExp(_p_->u.sasgarr_.exp_);
-    break;  case is_SAsgVar:
-    /* Code for SAsgVar Goes Here */
-    visitId(_p_->u.sasgvar_.id_);
-    break;  case is_SAsg:
-    /* Code for SAsg Goes Here */
-    visitStmt(_p_->u.sasg_.stmt_);
-    visitExp(_p_->u.sasg_.exp_);
-    break;  case is_SDecl:
-    /* Code for SDecl Goes Here */
-    visitDecl(_p_->u.sdecl_.decl_);
-    break;  case is_SBran:
-    /* Code for SBran Goes Here */
-    visitBranch(_p_->u.sbran_.branch_);
-    break;  case is_SLoop:
-    /* Code for SLoop Goes Here */
-    visitLoop(_p_->u.sloop_.loop_);
-    break;  case is_SGoto:
-    /* Code for SGoto Goes Here */
-    visitId(_p_->u.sgoto_.id_);
-    break;  case is_SGoSb:
-    /* Code for SGoSb Goes Here */
-    visitId(_p_->u.sgosb_.id_);
-    break;  case is_SAsm:
-    /* Code for SAsm Goes Here */
-    visitString(_p_->u.sasm_.string_);
-    break;  case is_SCall:
-    /* Code for SCall Goes Here */
-    visitId(_p_->u.scall_.id_);
-    visitListParam(_p_->u.scall_.listparam_);
-    break;
-  default:
-    fprintf(stderr, "Error: bad kind field when printing Stmt!\n");
-    exit(1);
-  }
-}
-
-void visitListStmt(ListStmt liststmt)
-{
-  while(liststmt != 0)
-  {
-    /* Code For ListStmt Goes Here */
-    visitStmt(liststmt->stmt_);
-    liststmt = liststmt->liststmt_;
-  }
-}
-
-void visitParam(Param _p_)
-{
-  switch(_p_->kind)
-  {
-  case is_FPar:
-    /* Code for FPar Goes Here */
-    visitExp(_p_->u.fpar_.exp_);
-    break;
-  default:
-    fprintf(stderr, "Error: bad kind field when printing Param!\n");
-    exit(1);
-  }
-}
-
-void visitListParam(ListParam listparam)
-{
-  while(listparam != 0)
-  {
-    /* Code For ListParam Goes Here */
-    visitParam(listparam->param_);
-    listparam = listparam->listparam_;
-  }
-}
-
+/* ======= COMMON FUNCTIONALITIES */
 void declareGlobal(Decl _p_) {
   char varName[50] = {0};
 
@@ -285,9 +151,182 @@ void declareGlobal(Decl _p_) {
       exit(1);
   }
 
-
   _asm(oglobals, "\t.%s\tdb\t%d", varName, value);
 }
+
+void loadVariable(Exp e) {
+  if (e->kind == is_EVar) {
+    _asm(cscope, "\tmov\tI,\tglobal.%s", e->u.evar_.id_);
+    _asm(cscope, "\tregl\tv0");
+  }
+}
+/* ======= TREE TRAVERSAL */
+void visitProgram(Program _p_)
+{
+  switch(_p_->kind)
+  {
+  case is_Prog:
+    visitListLine(_p_->u.prog_.listline_);
+
+    char **p = 0;
+    while ( (p=(char**)utarray_next(oheaders,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(oglobals,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(omain,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(ofunc,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(omemstack,p))) {
+      printf("%s\n",*p);
+    }
+
+    utarray_free(oheaders);
+    utarray_free(oglobals);
+    utarray_free(omain);
+    utarray_free(ofunc);
+    utarray_free(omemstack);
+
+    break;
+  default:
+    fprintf(stderr, "Error: bad kind field when printing Program!\n");
+    exit(1);
+  }
+}
+
+void visitLine(Line _p_)
+{
+  switch(_p_->kind)
+  {
+  case is_PLDecl:
+    /* Code for PLDecl Goes Here */
+    visitPDecl(_p_->u.pldecl_.pdecl_);
+    break;  case is_PStmt:
+    /* Code for PStmt Goes Here */
+    visitStmt(_p_->u.pstmt_.stmt_);
+    break;
+  default:
+    fprintf(stderr, "Error: bad kind field when printing Line!\n");
+    exit(1);
+  }
+}
+
+void visitListLine(ListLine listline)
+{
+  while(listline != 0)
+  {
+    /* Code For ListLine Goes Here */
+    visitLine(listline->line_);
+    listline = listline->listline_;
+  }
+}
+
+void visitStmt(Stmt _p_)
+{
+  switch(_p_->kind)
+  {
+    case is_SEval:
+      /* Code for SEval Goes Here */
+      visitExp(_p_->u.seval_.exp_);
+    break;
+    case is_SAsgArr:
+      /* Code for SAsgArr Goes Here */
+      visitId(_p_->u.sasgarr_.id_);
+      visitExp(_p_->u.sasgarr_.exp_);
+    break;
+    case is_SAsgVar:
+      visitId(_p_->u.sasgvar_.id_);
+    break;
+    case is_SAsg:
+      visitExp(_p_->u.sasg_.exp_);
+      visitStmt(_p_->u.sasg_.stmt_);
+
+      if (retExpType == ERETCONST)
+        _asm(cscope, "\tmov\tv0,\t%d", retNum);
+      else;
+
+      _asm(cscope, "\t; SAssign");
+      _asm(cscope, "\tmov\tI,\tglobal.%s", retId);
+      _asm(cscope, "\tregd\tv0");
+    break;
+    case is_SDecl:
+      /* Code for SDecl Goes Here */
+      visitDecl(_p_->u.sdecl_.decl_);
+    break;
+    case is_SBran:
+      /* Code for SBran Goes Here */
+      visitBranch(_p_->u.sbran_.branch_);
+    break;
+    case is_SLoop:
+      /* Code for SLoop Goes Here */
+      visitLoop(_p_->u.sloop_.loop_);
+    break;
+    case is_SGoto:
+      /* Code for SGoto Goes Here */
+      visitId(_p_->u.sgoto_.id_);
+    break;
+    case is_SGoSb:
+      /* Code for SGoSb Goes Here */
+      visitId(_p_->u.sgosb_.id_);
+    break;
+    case is_SAsm:
+      /* Code for SAsm Goes Here */
+      visitString(_p_->u.sasm_.string_);
+    break;
+    case is_SCall:
+      /* Code for SCall Goes Here */
+      visitId(_p_->u.scall_.id_);
+      visitListParam(_p_->u.scall_.listparam_);
+    break;
+    default:
+      fprintf(stderr, "Error: bad kind field when printing Stmt!\n");
+      exit(1);
+  }
+}
+
+void visitListStmt(ListStmt liststmt)
+{
+  while(liststmt != 0)
+  {
+    /* Code For ListStmt Goes Here */
+    visitStmt(liststmt->stmt_);
+    liststmt = liststmt->liststmt_;
+  }
+}
+
+void visitParam(Param _p_)
+{
+  switch(_p_->kind)
+  {
+  case is_FPar:
+    /* Code for FPar Goes Here */
+    visitExp(_p_->u.fpar_.exp_);
+    break;
+  default:
+    fprintf(stderr, "Error: bad kind field when printing Param!\n");
+    exit(1);
+  }
+}
+
+void visitListParam(ListParam listparam)
+{
+  while(listparam != 0)
+  {
+    /* Code For ListParam Goes Here */
+    visitParam(listparam->param_);
+    listparam = listparam->listparam_;
+  }
+}
+
+
 
 void visitPDecl(PDecl _p_)
 {
@@ -529,16 +568,44 @@ void visitExp(Exp _p_)
       visitExp(_p_->u.ebitshr_.exp_1);
       visitExp(_p_->u.ebitshr_.exp_2);
     break;
-    case is_EAdd:
-      /* Code for EAdd Goes Here */
+    case is_EAdd: {
+      _asm(cscope, "\t; EAdd");
       visitExp(_p_->u.eadd_.exp_1);
+      bool exp1Const = retExpType == ERETCONST;
+      uint8_t exp1 = retExpConst;
+
       visitExp(_p_->u.eadd_.exp_2);
-    break;
-    case is_ESub:
+      bool exp2Const = retExpType == ERETCONST;
+      uint8_t exp2 = retExpConst;
+      
+      if (retExpType)
+        _asm(cscope, "\tmov\tv0,\t%d", exp1 + exp2);
+      else {
+        if (exp2Const)
+          _asm(cscope, "\tmov\tv1,\t%d", exp2);
+        else {
+          /* load exp2 to v0 */
+          loadVariable(_p_->u.eadd_.exp_2);
+          _asm(cscope, "\tmov\tv1,\tv0");
+        }
+
+        if (exp1Const)
+          _asm(cscope, "\tmov\tv0,\t%d", exp1);
+        else {
+          /* load exp1 to v0 */
+          loadVariable(_p_->u.eadd_.exp_1);
+        }
+
+        _asm(cscope, "\tadd\tv0,\tv1");
+        retExpType = exp1Const && exp2Const?ERETCONST:ERETREG;
+      }
+
+    } break;
+    case is_ESub: {
       /* Code for ESub Goes Here */
       visitExp(_p_->u.esub_.exp_1);
       visitExp(_p_->u.esub_.exp_2);
-    break;
+    } break;
     case is_EDiv:
       /* Code for EDiv Goes Here */
       visitExp(_p_->u.ediv_.exp_1);
@@ -560,8 +627,8 @@ void visitExp(Exp _p_)
       retExpConst = retNum;
     break;  
     case is_EVar:
-      /* Code for EVar Goes Here */
       visitId(_p_->u.evar_.id_);
+      retExpType = ERETVAR;
     break;
     case is_EArrV:
       /* Code for EArrV Goes Here */

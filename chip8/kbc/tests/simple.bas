@@ -1,14 +1,9 @@
-global a = 1
-global b = 2
+global a
+global b
 global c
 
-c = 5 + 6
+a = 1
 
-a = 3 + 6
+b = 2
 
-draw(0,0,5,c)
-
-func testfn()
-	let a = 1
-return
-
+c = a + 5

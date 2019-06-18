@@ -29,10 +29,10 @@ int main(int argc, char ** argv)
     printf("%s\n\n", showProgram(parse_tree));
     /*printf("[Linearized Tree]\n");
     printf("%s\n\n", printProgram(parse_tree)); */
-    printf("; Chip8 Assembly\n");
     initCodeGen();
-    printf("; End Chip8 Assembly\n");
+    printf("; Chip8 Assembly\n");
     visitProgram(parse_tree);
+    printf("; End Chip8 Assembly\n");
     return 0;
   }
   return 1;
