@@ -25,8 +25,8 @@ int main(int argc, char ** argv)
   if (parse_tree)
   {
     /*printf("\nParse Succesful!\n");*/
-    printf("\n[Abstract Syntax]\n");
-    printf("%s\n\n", showProgram(parse_tree));
+//    printf("\n[Abstract Syntax]\n");
+//    printf("%s\n\n", showProgram(parse_tree));
     /*printf("[Linearized Tree]\n");
     printf("%s\n\n", printProgram(parse_tree)); */
     initCodeGen();

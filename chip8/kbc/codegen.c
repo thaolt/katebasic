@@ -37,7 +37,8 @@ char    retExpId[50]      = {0};
 UT_array *oheaders;
 UT_array *oglobals;
 UT_array *omain;
-UT_array *ofunc;
+UT_array *okfunc;
+UT_array *ouserfunc;
 UT_array *omemstack;
 /* ======= LOOKUP TABLES */
 
@@ -68,6 +69,9 @@ static void _asm(UT_array *section, const char *fmt, ...) {
   free(line);
 }
 
+/* ======= CHIP8 FUNCTION (KFUNC) */
+#include "kfunc.c"
+
 /* ======= INITIALIZATION */
 void initCodeGen()
 {
@@ -93,14 +97,22 @@ void initCodeGen()
   HASH_ADD_STR( scopes, id, main );  /* id: name of key field */
   cscope = omain;
 
-  utarray_new(ofunc,    &ut_str_icd);
-  _asm(ofunc, "");
-  _asm(ofunc, "userfunc:");
+  utarray_new(ouserfunc,    &ut_str_icd);
+  _asm(ouserfunc, "");
+  _asm(ouserfunc, "halt:");
+  _asm(ouserfunc, "\tjmp\thalt");
+  _asm(ouserfunc, "");
+  _asm(ouserfunc, "userfunc:");
+
+  utarray_new(okfunc,    &ut_str_icd);
+  _asm(okfunc, "");
+  _asm(okfunc, "kfunc:");
   
   utarray_new(omemstack,&ut_str_icd);
   _asm(omemstack, "");
   _asm(omemstack, "memstk:");
 }
+
 /* ======= COMMON FUNCTIONALITIES */
 void declareGlobal(Decl _p_) {
   char varName[50] = {0};
@@ -186,7 +198,11 @@ void visitProgram(Program _p_)
       printf("%s\n",*p);
     }
 
-    while ( (p=(char**)utarray_next(ofunc,p))) {
+    while ( (p=(char**)utarray_next(ouserfunc,p))) {
+      printf("%s\n",*p);
+    }
+
+    while ( (p=(char**)utarray_next(okfunc,p))) {
       printf("%s\n",*p);
     }
 
@@ -197,7 +213,8 @@ void visitProgram(Program _p_)
     utarray_free(oheaders);
     utarray_free(oglobals);
     utarray_free(omain);
-    utarray_free(ofunc);
+    utarray_free(ouserfunc);
+    utarray_free(okfunc);
     utarray_free(omemstack);
 
     break;
@@ -282,8 +299,8 @@ void visitStmt(Stmt _p_)
       visitId(_p_->u.sgosb_.id_);
     break;
     case is_SAsm:
-      /* Code for SAsm Goes Here */
       visitString(_p_->u.sasm_.string_);
+      _asm(cscope, "\t%s", _p_->u.sasm_.string_);
     break;
     case is_SCall:
       /* Code for SCall Goes Here */
@@ -522,16 +539,6 @@ void visitExp(Exp _p_)
       visitExp(_p_->u.ebitor_.exp_1);
       visitExp(_p_->u.ebitor_.exp_2);
     break;
-    case is_EBitXor:
-      /* Code for EBitXor Goes Here */
-      visitExp(_p_->u.ebitxor_.exp_1);
-      visitExp(_p_->u.ebitxor_.exp_2);
-    break;
-    case is_EBitAnd:
-      /* Code for EBitAnd Goes Here */
-      visitExp(_p_->u.ebitand_.exp_1);
-      visitExp(_p_->u.ebitand_.exp_2);
-    break;
     case is_ELgEq:
       /* Code for ELgEq Goes Here */
       visitExp(_p_->u.elgeq_.exp_1);
@@ -561,6 +568,16 @@ void visitExp(Exp _p_)
       /* Code for ELgGte Goes Here */
       visitExp(_p_->u.elggte_.exp_1);
       visitExp(_p_->u.elggte_.exp_2);
+    break;
+    case is_EBitXor:
+      /* Code for EBitXor Goes Here */
+      visitExp(_p_->u.ebitxor_.exp_1);
+      visitExp(_p_->u.ebitxor_.exp_2);
+    break;
+    case is_EBitAnd:
+      /* Code for EBitAnd Goes Here */
+      visitExp(_p_->u.ebitand_.exp_1);
+      visitExp(_p_->u.ebitand_.exp_2);
     break;
     case is_EBitShl:
       /* Code for EBitShl Goes Here */
@@ -616,9 +633,9 @@ void visitExp(Exp _p_)
       visitExp(_p_->u.ediv_.exp_2);
     break;
     case is_EMul:
-      /* Code for EMul Goes Here */
       visitExp(_p_->u.emul_.exp_1);
       visitExp(_p_->u.emul_.exp_2);
+      kfuncMultiply();
     break;
     case is_EMod:
       /* Code for EMod Goes Here */
