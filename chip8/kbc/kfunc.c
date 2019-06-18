@@ -18,6 +18,7 @@ void kfuncMultiply() {
 		_asm(okfunc, "\t\tsub\tv2,\tv3");
 		_asm(okfunc, "\t\tjmp\t$ - 8");
 		_asm(okfunc, "\tret");
+		kfuncUseMultiply = 1;
 	}
 	_asm(cscope, "\tcall\tkfunc.multiply");
 }

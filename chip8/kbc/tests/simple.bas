@@ -1,9 +1,8 @@
-global a = 1
-global b = 5-100
-global c = 10 * 2
+global a = 4
+global b = 2
+global c = 3
 
-a = a + 1
-a = 0 * a
+c =  (a - b) * c * 2
 
 _ "hex v0"
 _ "mov v1, 0"

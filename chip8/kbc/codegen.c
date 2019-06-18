@@ -276,7 +276,7 @@ void visitStmt(Stmt _p_)
       visitStmt(_p_->u.sasg_.stmt_);
 
       if (retExpType == ERETCONST)
-        _asm(cscope, "\tmov\tv0,\t%d", retNum);
+        _asm(cscope, "\tmov\tv0,\t%d", retExpConst);
       else;
 
       _asm(cscope, "\tmov\tI,\tglobal.%s", retId);
@@ -593,32 +593,44 @@ void visitExp(Exp _p_)
     break;
     case is_EAdd: {
       visitExp(_p_->u.eadd_.exp_1);
-      bool exp1Const = retExpType == ERETCONST;
-      uint8_t exp1 = retExpConst;
+      uint8_t exp1Type = retExpType;
+      uint8_t exp1Const = retExpConst;
 
       visitExp(_p_->u.eadd_.exp_2);
-      bool exp2Const = retExpType == ERETCONST;
-      uint8_t exp2 = retExpConst;
+      uint8_t exp2Type = retExpType;
+      uint8_t exp2Const = retExpConst;
 
-      if (exp1Const && exp2Const) {
-        retExpConst = exp1 + exp2;
-        if (!isGlobalDeclare)
-          _asm(cscope, "\tmov\tv0,\t%d", retExpConst);
+      if (exp1Type==ERETCONST && exp2Type==ERETCONST) {
+        retExpConst = exp1Const + exp2Const;
       } else {
-        if (exp2Const)
-          _asm(cscope, "\tmov\tv1,\t%d", exp2);
-        else {
-          loadVariable(_p_->u.eadd_.exp_2);
-          _asm(cscope, "\tmov\tv1,\tv0");
+        switch (exp2Type) {
+          case ERETCONST:
+            _asm(cscope, "\tmov\tv1,\t%d", exp2Const);
+          break;
+          case ERETVAR:
+            loadVariable(_p_->u.eadd_.exp_2);
+            _asm(cscope, "\tmov\tv1,\tv0");
+          break;
+          case ERETREG:
+            _asm(cscope, "\tmov\tv1,\tv0");
+          break;
         }
-        if (exp1Const)
-          _asm(cscope, "\tmov\tv0,\t%d", exp1);
-        else {
-          loadVariable(_p_->u.eadd_.exp_1);
+
+        switch (exp1Type) {
+          case ERETCONST:
+            _asm(cscope, "\tmov\tv0,\t%d", exp1Const);
+          break;
+          case ERETVAR:
+            loadVariable(_p_->u.eadd_.exp_1);
+          break;
+          case ERETREG:
+            _asm(cscope, "\tmov\tv1,\tv0");
+          break;
         }
+
         _asm(cscope, "\tadd\tv0,\tv1");
       }
-      retExpType = exp1Const && exp2Const ? ERETCONST : ERETREG;
+      retExpType = exp1Type==ERETCONST && exp2Type==ERETCONST ? ERETCONST : ERETREG;
     } break;
     case is_ESub: {
       visitExp(_p_->u.esub_.exp_1);
@@ -631,8 +643,6 @@ void visitExp(Exp _p_)
 
       if (exp1Const && exp2Const) {
         retExpConst = exp1 - exp2;
-        if (!isGlobalDeclare)
-          _asm(cscope, "\tmov\tv0,\t%d", retExpConst);
       } else {
         if (exp2Const)
           _asm(cscope, "\tmov\tv1,\t%d", exp2);
@@ -645,7 +655,7 @@ void visitExp(Exp _p_)
         else {
           loadVariable(_p_->u.eadd_.exp_1);
         }
-        _asm(cscope, "\sub\tv0,\tv1");
+        _asm(cscope, "\tsub\tv0,\tv1");
       }
       retExpType = exp1Const && exp2Const ? ERETCONST : ERETREG;
     } break;
@@ -656,37 +666,46 @@ void visitExp(Exp _p_)
     break;
     case is_EMul: {
       visitExp(_p_->u.emul_.exp_1);
-      bool exp1Const = retExpType == ERETCONST;
-      uint8_t exp1 = retExpConst;
+      uint8_t exp1Type = retExpType;
+      uint8_t exp1Const = retExpConst;
 
       visitExp(_p_->u.emul_.exp_2);
-      bool exp2Const = retExpType == ERETCONST;
-      uint8_t exp2 = retExpConst;
+      uint8_t exp2Type = retExpType;
+      uint8_t exp2Const = retExpConst;
 
-      if (exp1Const && exp2Const) {
-        retExpConst = exp1 * exp2;
-        if (!isGlobalDeclare)
-          _asm(cscope, "\tmov\tv0,\t%d", retExpConst);
+      if (exp1Type==ERETCONST && exp2Type==ERETCONST) {
+        retExpConst = exp1Const * exp2Const;
       } else {
-        if (exp2Const)
-          _asm(cscope, "\tmov\tv1,\t%d", exp2);
-        else {
-          /* load exp2 to v0 */
-          loadVariable(_p_->u.eadd_.exp_2);
-          _asm(cscope, "\tmov\tv1,\tv0");
+        switch (exp2Type) {
+          case ERETCONST:
+            _asm(cscope, "\tmov\tv1,\t%d", exp2Const);
+          break;
+          case ERETVAR:
+            if (exp1Type == ERETREG) _asm(cscope, "\tmov\tvE,\tv0");
+            loadVariable(_p_->u.emul_.exp_2);
+            _asm(cscope, "\tmov\tv1,\tv0");
+            if (exp1Type == ERETREG) _asm(cscope, "\tmov\tv0,\tvE");
+          break;
+          case ERETREG:
+            _asm(cscope, "\tmov\tv1,\tv0");
+          break;
         }
 
-        if (exp1Const)
-          _asm(cscope, "\tmov\tv0,\t%d", exp1);
-        else {
-          /* load exp1 to v0 */
-          loadVariable(_p_->u.eadd_.exp_1);
+        switch (exp1Type) {
+          case ERETCONST:
+            _asm(cscope, "\tmov\tv0,\t%d", exp1Const);
+          break;
+          case ERETVAR:
+            loadVariable(_p_->u.emul_.exp_1);
+          break;
+          case ERETREG:
+            // _asm(cscope, "\tmov\tv1,\tv0");
+          break;
         }
 
         kfuncMultiply();
       }
-      retExpType = exp1Const && exp2Const ? ERETCONST : ERETREG;
-
+      retExpType = exp1Type==ERETCONST && exp2Type==ERETCONST ? ERETCONST : ERETREG;
     } break;
     case is_EMod:
       /* Code for EMod Goes Here */
