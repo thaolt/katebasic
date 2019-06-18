@@ -608,26 +608,46 @@ void visitExp(Exp _p_)
         if (exp2Const)
           _asm(cscope, "\tmov\tv1,\t%d", exp2);
         else {
-          /* load exp2 to v0 */
           loadVariable(_p_->u.eadd_.exp_2);
           _asm(cscope, "\tmov\tv1,\tv0");
         }
-
         if (exp1Const)
           _asm(cscope, "\tmov\tv0,\t%d", exp1);
         else {
-          /* load exp1 to v0 */
           loadVariable(_p_->u.eadd_.exp_1);
         }
-
         _asm(cscope, "\tadd\tv0,\tv1");
       }
       retExpType = exp1Const && exp2Const ? ERETCONST : ERETREG;
     } break;
     case is_ESub: {
-      /* Code for ESub Goes Here */
       visitExp(_p_->u.esub_.exp_1);
+      bool exp1Const = retExpType == ERETCONST;
+      uint8_t exp1 = retExpConst;
+
       visitExp(_p_->u.esub_.exp_2);
+      bool exp2Const = retExpType == ERETCONST;
+      uint8_t exp2 = retExpConst;
+
+      if (exp1Const && exp2Const) {
+        retExpConst = exp1 - exp2;
+        if (!isGlobalDeclare)
+          _asm(cscope, "\tmov\tv0,\t%d", retExpConst);
+      } else {
+        if (exp2Const)
+          _asm(cscope, "\tmov\tv1,\t%d", exp2);
+        else {
+          loadVariable(_p_->u.eadd_.exp_2);
+          _asm(cscope, "\tmov\tv1,\tv0");
+        }
+        if (exp1Const)
+          _asm(cscope, "\tmov\tv0,\t%d", exp1);
+        else {
+          loadVariable(_p_->u.eadd_.exp_1);
+        }
+        _asm(cscope, "\sub\tv0,\tv1");
+      }
+      retExpType = exp1Const && exp2Const ? ERETCONST : ERETREG;
     } break;
     case is_EDiv:
       /* Code for EDiv Goes Here */
