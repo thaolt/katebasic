@@ -95,7 +95,7 @@ void initCodeGen()
   _asm(omain, "start:");
   main->oasm = omain;
   HASH_ADD_STR( scopes, id, main );  /* id: name of key field */
-  cscope = omain;
+  cscope = main;
 
   utarray_new(ouserfunc,    &ut_str_icd);
   _asm(ouserfunc, "");
@@ -170,8 +170,8 @@ void declareGlobal(Decl _p_) {
 
 void loadVariable(Exp e) {
   if (e->kind == is_EVar) {
-    _asm(cscope, "\tmov\tI,\tglobal.%s", e->u.evar_.id_);
-    _asm(cscope, "\tregl\tv0");
+    _asm(cscope->oasm, "\tmov\tI,\tglobal.%s", e->u.evar_.id_);
+    _asm(cscope->oasm, "\tregl\tv0");
   }
 }
 /* ======= TREE TRAVERSAL */
@@ -276,11 +276,10 @@ void visitStmt(Stmt _p_)
       visitStmt(_p_->u.sasg_.stmt_);
 
       if (retExpType == ERETCONST)
-        _asm(cscope, "\tmov\tv0,\t%d", retExpConst);
-      else;
+        _asm(cscope->oasm, "\tmov\tv0,\t%d", retExpConst);
 
-      _asm(cscope, "\tmov\tI,\tglobal.%s", retId);
-      _asm(cscope, "\tregd\tv0");
+      _asm(cscope->oasm, "\tmov\tI,\tglobal.%s", retId);
+      _asm(cscope->oasm, "\tregd\tv0");
     break;
     case is_SDecl:
       /* Code for SDecl Goes Here */
@@ -304,7 +303,7 @@ void visitStmt(Stmt _p_)
     break;
     case is_SAsm:
       visitString(_p_->u.sasm_.string_);
-      _asm(cscope, "\t%s", _p_->u.sasm_.string_);
+      _asm(cscope->oasm, "\t%s", _p_->u.sasm_.string_);
     break;
     case is_SCall:
       /* Code for SCall Goes Here */
@@ -591,119 +590,94 @@ void visitExp(Exp _p_)
       visitExp(_p_->u.ebitshr_.exp_1);
       visitExp(_p_->u.ebitshr_.exp_2);
     break;
-    case is_EAdd: {
-      visitExp(_p_->u.eadd_.exp_1);
+    case is_EMul: case is_ESub: case is_EAdd: case is_EDiv: {
+      Exp exp1, exp2;
+
+      switch (_p_->kind) {
+        case is_EAdd:
+          exp1 = _p_->u.eadd_.exp_1;
+          exp2 = _p_->u.eadd_.exp_2;
+        break;
+        case is_ESub:
+          exp1 = _p_->u.esub_.exp_1;
+          exp2 = _p_->u.esub_.exp_2;
+        break;
+        case is_EMul:
+          exp1 = _p_->u.emul_.exp_1;
+          exp2 = _p_->u.emul_.exp_2;
+        break;
+        case is_EDiv:
+          exp1 = _p_->u.ediv_.exp_1;
+          exp2 = _p_->u.ediv_.exp_2;
+        break;
+      }
+
+      visitExp(exp1);
       uint8_t exp1Type = retExpType;
       uint8_t exp1Const = retExpConst;
 
-      visitExp(_p_->u.eadd_.exp_2);
+      visitExp(exp2);
       uint8_t exp2Type = retExpType;
       uint8_t exp2Const = retExpConst;
 
       if (exp1Type==ERETCONST && exp2Type==ERETCONST) {
-        retExpConst = exp1Const + exp2Const;
+        switch (_p_->kind) {
+          case is_EAdd:
+            retExpConst = exp1Const + exp2Const;
+          break;
+          case is_ESub:
+            retExpConst = exp1Const - exp2Const;
+          break;
+          case is_EMul:
+            retExpConst = exp1Const * exp2Const;
+          break;
+          case is_EDiv:
+            retExpConst = exp1Const / exp2Const;
+          break;
+        }
       } else {
         switch (exp2Type) {
           case ERETCONST:
-            _asm(cscope, "\tmov\tv1,\t%d", exp2Const);
+            _asm(cscope->oasm, "\tmov\tv1,\t%d", exp2Const);
           break;
           case ERETVAR:
-            loadVariable(_p_->u.eadd_.exp_2);
-            _asm(cscope, "\tmov\tv1,\tv0");
-          break;
-          case ERETREG:
-            _asm(cscope, "\tmov\tv1,\tv0");
-          break;
-        }
-
-        switch (exp1Type) {
-          case ERETCONST:
-            _asm(cscope, "\tmov\tv0,\t%d", exp1Const);
-          break;
-          case ERETVAR:
-            loadVariable(_p_->u.eadd_.exp_1);
-          break;
-          case ERETREG:
-            _asm(cscope, "\tmov\tv1,\tv0");
-          break;
-        }
-
-        _asm(cscope, "\tadd\tv0,\tv1");
-      }
-      retExpType = exp1Type==ERETCONST && exp2Type==ERETCONST ? ERETCONST : ERETREG;
-    } break;
-    case is_ESub: {
-      visitExp(_p_->u.esub_.exp_1);
-      bool exp1Const = retExpType == ERETCONST;
-      uint8_t exp1 = retExpConst;
-
-      visitExp(_p_->u.esub_.exp_2);
-      bool exp2Const = retExpType == ERETCONST;
-      uint8_t exp2 = retExpConst;
-
-      if (exp1Const && exp2Const) {
-        retExpConst = exp1 - exp2;
-      } else {
-        if (exp2Const)
-          _asm(cscope, "\tmov\tv1,\t%d", exp2);
-        else {
-          loadVariable(_p_->u.eadd_.exp_2);
-          _asm(cscope, "\tmov\tv1,\tv0");
-        }
-        if (exp1Const)
-          _asm(cscope, "\tmov\tv0,\t%d", exp1);
-        else {
-          loadVariable(_p_->u.eadd_.exp_1);
-        }
-        _asm(cscope, "\tsub\tv0,\tv1");
-      }
-      retExpType = exp1Const && exp2Const ? ERETCONST : ERETREG;
-    } break;
-    case is_EDiv:
-      /* Code for EDiv Goes Here */
-      visitExp(_p_->u.ediv_.exp_1);
-      visitExp(_p_->u.ediv_.exp_2);
-    break;
-    case is_EMul: {
-      visitExp(_p_->u.emul_.exp_1);
-      uint8_t exp1Type = retExpType;
-      uint8_t exp1Const = retExpConst;
-
-      visitExp(_p_->u.emul_.exp_2);
-      uint8_t exp2Type = retExpType;
-      uint8_t exp2Const = retExpConst;
-
-      if (exp1Type==ERETCONST && exp2Type==ERETCONST) {
-        retExpConst = exp1Const * exp2Const;
-      } else {
-        switch (exp2Type) {
-          case ERETCONST:
-            _asm(cscope, "\tmov\tv1,\t%d", exp2Const);
-          break;
-          case ERETVAR:
-            if (exp1Type == ERETREG) _asm(cscope, "\tmov\tvE,\tv0");
+            if (exp1Type == ERETREG) _asm(cscope->oasm, "\tmov\tvE,\tv0");
             loadVariable(_p_->u.emul_.exp_2);
-            _asm(cscope, "\tmov\tv1,\tv0");
-            if (exp1Type == ERETREG) _asm(cscope, "\tmov\tv0,\tvE");
+            _asm(cscope->oasm, "\tmov\tv1,\tv0");
+            if (exp1Type == ERETREG) _asm(cscope->oasm, "\tmov\tv0,\tvE");
           break;
           case ERETREG:
-            _asm(cscope, "\tmov\tv1,\tv0");
+            _asm(cscope->oasm, "\tmov\tv1,\tv0");
           break;
         }
 
         switch (exp1Type) {
           case ERETCONST:
-            _asm(cscope, "\tmov\tv0,\t%d", exp1Const);
+            _asm(cscope->oasm, "\tmov\tv0,\t%d", exp1Const);
           break;
           case ERETVAR:
             loadVariable(_p_->u.emul_.exp_1);
           break;
           case ERETREG:
-            // _asm(cscope, "\tmov\tv1,\tv0");
+            // _asm(cscope->oasm, "\tmov\tv1,\tv0");
           break;
         }
 
-        kfuncMultiply();
+        switch (_p_->kind) {
+          case is_EAdd:
+            _asm(cscope->oasm, "\tadd\tv0,\tv1");
+          break;
+          case is_ESub:
+            _asm(cscope->oasm, "\tsub\tv0,\tv1");
+          break;
+          case is_EMul:
+            kfuncMultiply();
+          break;
+          case is_EDiv:
+            kfuncDivide();
+          break;
+        }
+        
       }
       retExpType = exp1Type==ERETCONST && exp2Type==ERETCONST ? ERETCONST : ERETREG;
     } break;

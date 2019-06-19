@@ -1,6 +1,3 @@
-include 'c8.asm'
-org 0x200
-
 ; global a = 1
 ; global b = 2
 ; global c
@@ -13,6 +10,7 @@ global:
 	.a: db	0x01
 	.b: db	0x02
 	.c: db	0
+	db 0
 
 start:
 	; clear screen
