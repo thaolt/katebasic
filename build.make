@@ -22,3 +22,6 @@ cpp: grammars
 
 grammars:
 	make -f ../grammars/Makefile
+
+kas:
+	make -f ../chip8/kas/linux/Makefile

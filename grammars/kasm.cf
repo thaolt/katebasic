@@ -1,0 +1,117 @@
+entrypoints Line ;
+
+
+LnLabel.		Line1	::= Label ;
+LnSubLbl.		Line1	::= Sublabel ;
+LnCmd.			Line	::= Cmd ;
+LnLblCmd.		Line	::= Line1 Cmd ;
+
+coercions Line 1 ;
+terminator Line "" ;
+
+CCls.		Cmd		::= "cls" ;
+CRet.		Cmd		::= "ret" ;
+CJmp.		Cmd		::=	"jmp" Exp ;
+CBJp.		Cmd		::=	"bjp" Exp ;
+CCall.		Cmd		::=	"call" Exp ;
+CSub.		Cmd		::=	"sub" Reg "," Reg ;
+CRSub.		Cmd		::=	"rsub" Reg "," Reg ;
+CBOr.		Cmd		::=	"or" Reg "," Reg ;
+CBAnd.		Cmd		::=	"and" Reg "," Reg ;
+CBXor.		Cmd		::=	"xor" Reg "," Reg ;
+CBShl.		Cmd		::=	"shl" Reg "," Reg ;
+CBShr.		Cmd		::=	"shr" Reg "," Reg ;
+CRnd.		Cmd		::=	"rnd" Reg "," Num ;
+CDrw.		Cmd		::=	"drw" Reg "," Reg "," Num ;
+CXDrw.		Cmd		::=	"xdrw" Reg "," Reg ;
+CSkp.		Cmd		::= "skp" Reg ;
+CSknp.		Cmd		::= "sknp" Reg ;
+CWbp.		Cmd		::= "wbp" Reg ;
+CBcd.		Cmd		::= "bcd" Reg ;
+CHex.		Cmd		::= "hex" Reg ;
+CEHx.		Cmd		::= "ehx" Reg ;
+CScd.		Cmd		::= "scd" Num ;
+CScr.		Cmd		::= "scr" ;
+CScl.		Cmd		::= "scl" ;
+CHires.		Cmd		::= "hires" ;
+CLores.		Cmd		::= "lowres" ;
+CRegd.		Cmd		::= "regd" Reg ;
+CRegl.		Cmd		::= "regl" Reg ;
+CFlgd.		Cmd		::= "flgd" Reg ;
+CFlgl.		Cmd		::= "flgl" Reg ;
+_.			Cmd		::=	"add" Cmd1 ;
+CAddX.		Cmd1	::= Reg "," Num ;
+CAddXY.		Cmd1	::= Reg "," Reg ;
+CAddI.		Cmd1	::= I "," Reg ;
+_.			Cmd		::= "ske" Cmd2 ;
+CSkeXY.		Cmd2	::= Reg "," Reg ;
+CSkeX.		Cmd2	::= Reg "," Num ;
+_.			Cmd		::= "skne" Cmd3 ;
+CSkneXY.	Cmd3	::= Reg "," Reg ;
+CSkneX.		Cmd3	::= Reg "," Num ;
+_.			Cmd		::= "mov" Cmd4 ;
+CMovX.		Cmd4	::= Reg "," Exp ;
+CMovXY.		Cmd4	::= Reg "," Reg ;
+CMovTX.		Cmd4	::= Timer "," Reg ;
+CMovXT.		Cmd4	::= Reg "," Timer ;
+CMovI.		Cmd4	::= I "," Exp ;
+
+terminator Cmd4 "" ;
+
+
+-- Expressions
+_.			Exp 	::= Exp ;
+ELgOr.		Exp1  	::= Exp1 "or" Exp2;
+ELgAnd.		Exp2  	::= Exp2 "and" Exp3;
+EBitOr.		Exp3  	::= Exp3 "|" Exp4;
+EBitXor.	Exp4  	::= Exp4 "^" Exp5;
+EBitAnd.	Exp5  	::= Exp5 "&" Exp6;
+ELgEq.		Exp6  	::= Exp6 "==" Exp7;
+ELgNe.		Exp6  	::= Exp6 "!=" Exp7;
+ELgLt.		Exp7 	::= Exp7 "<" Exp8;
+ELgGt.		Exp7 	::= Exp7 ">" Exp8;
+ELgLte.		Exp7 	::= Exp7 "<=" Exp8;
+ELgGte.		Exp7 	::= Exp7 ">=" Exp8;
+EBitShl.	Exp8 	::= Exp8 "<<" Exp9;
+EBitShr.	Exp8 	::= Exp8 ">>" Exp9;
+EAdd. 		Exp9  	::= Exp9 "+" Exp10 ;
+ESub. 		Exp9  	::= Exp9  "-" Exp10 ;
+EDiv. 		Exp10 	::= Exp10 "/" Exp11 ;
+EMul. 		Exp10 	::= Exp10 "*" Exp11 ;
+EMod. 		Exp10 	::= Exp10 "mod" Exp11 ;
+_.			Exp11 	::= "(" Exp ")" ;
+EConst.		Exp12 	::= Const ;
+
+coercions Exp 12 ;
+
+-- Constants
+CNum.		Const 	::= Num ;
+CRef.		Const 	::= LRef ;
+
+-- Numbers
+NDec.		Num 	::= Numdec ;
+NBin.		Num 	::= Numbin ;
+NHex.		Num 	::= Numhex ;
+
+-- Timers
+TDelay.		Timer 	::= Delay ;
+TBeep.		Timer 	::= Beep ;
+
+
+LblRef.		LRef 	::= Ref ;
+
+comment ";" ;
+
+token I ( ('i'|'I') ) ;
+token Reg ( ('v'|'V') (digit | ('A'|'B'|'C'|'D'|'E'|'F'|'a'|'b'|'c'|'d'|'e'|'f')) ) ;
+token Label ( (letter|'_') (letter | digit | '_')+ ':') ;
+token Sublabel ('.' letter (letter | digit | '_')+ ':') ;
+token Numbin ( ('0'|'1')+ 'b') ;
+token Numhex ( '0' ('x'|'X') (digit | ('A'|'B'|'C'|'D'|'E'|'F'|'a'|'b'|'c'|'d'|'e'|'f') )+ ) ;
+token Numdec ( (digit)+ ) ;
+token Delay ( ('d'|'D') ('E'|'e') ('L'|'l') ('a'|'A') ('Y'|'y') ) ;
+token Beep ( ('b'|'B') ('e'|'E') ('e'|'E') ('p'|'P') ) ;
+token Ref ( ('.'|letter|'_') (letter | digit | '_'| '.')*) ;
+
+
+
